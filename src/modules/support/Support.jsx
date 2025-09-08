@@ -5,6 +5,7 @@ export default function Support() {
     <div>
       <h2>Support</h2>
       <p>Contactez-nous pour de l'aide.</p>
+      
     </div>
   );
 }

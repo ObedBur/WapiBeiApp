@@ -4,7 +4,7 @@ import path from 'path';
 // Configuration du stockage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/profile-photos');
+    cb(null, 'uploads');
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -12,12 +12,12 @@ const storage = multer.diskStorage({
   }
 });
 
-// Filtre pour n'accepter que les images
+// Filtre pour n'accepter que les images et les audios
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
     cb(null, true);
   } else {
-    cb(new Error('Le fichier doit être une image'), false);
+    cb(new Error('Le fichier doit être une image ou un audio'), false);
   }
 };
 
@@ -25,7 +25,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // Limite à 5MB
+    fileSize: 10 * 1024 * 1024 // Limite à 10MB
   }
 });
 

@@ -74,7 +74,7 @@ const router = express.Router();
 // Inscription
 router.post('/register', upload.single('photo'), async (req, res) => {
   try {
-    const { email, password, nom, prenom, telephone, role } = req.body;
+    const { email, password, nom, prenom, telephone, role, ville, pays } = req.body;
     
     // Vérifier si l'utilisateur existe déjà
     const [existingUser] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
@@ -90,8 +90,8 @@ router.post('/register', upload.single('photo'), async (req, res) => {
 
     // Insérer le nouvel utilisateur
     const [result] = await pool.query(
-      'INSERT INTO users (email, password, nom, prenom, telephone, role, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [email, hashedPassword, nom, prenom, telephone, role, photoUrl]
+      'INSERT INTO users (email, password, nom, prenom, telephone, role, photo_url, ville, pays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, nom, prenom, telephone, role, photoUrl, ville || null, pays || null]
     );
 
     // Générer OTP

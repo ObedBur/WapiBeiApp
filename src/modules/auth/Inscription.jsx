@@ -12,7 +12,9 @@ export default function Inscription() {
     photo: null,
     password: '',
     confirmPassword: '',
-    role: 'acheteur'
+    role: 'acheteur',
+    ville: '',
+    pays: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -174,6 +176,17 @@ export default function Inscription() {
               placeholder="0123456789"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
             />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+              <label htmlFor="ville" className="block text-sm font-medium text-gray-700">Ville</label>
+              <input type="text" id="ville" name="ville" value={formData.ville} onChange={handleChange} placeholder="Ville" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+            </div>
+            <div>
+              <label htmlFor="pays" className="block text-sm font-medium text-gray-700">Pays</label>
+              <input type="text" id="pays" name="pays" value={formData.pays} onChange={handleChange} placeholder="Pays" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+            </div>
           </div>
 
           <div>

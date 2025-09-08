@@ -2,6 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+import sellersRoutes from './routes/sellers.js';
+import productsRoutes from './routes/products.js';
+import messagesRoutes from './routes/messages.js';
+import conversationsRoutes from './routes/conversations.js';
+import usersRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -15,6 +20,11 @@ app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/sellers', sellersRoutes);
+app.use('/api/products', productsRoutes);
+app.use('/api/conversations', conversationsRoutes);
+app.use('/api/messages', messagesRoutes);
+app.use('/api/users', usersRoutes);
 
 const PORT = process.env.PORT || 5000;
 

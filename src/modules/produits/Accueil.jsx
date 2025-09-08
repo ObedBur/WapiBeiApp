@@ -1,13 +1,19 @@
 import React from "react";
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import { Navigate } from 'react-router-dom';
 import { ShoppingCart, Search, Filter, Star, ArrowRight, Heart, Eye } from '../../components/Icons';
 import ProductCard from '../../components/ProductCard';
 import CartDrawer from '../../components/CartDrawer';
 import ProductModal from '../../components/ProductModal';
 import PublicationPrix from './PublicationPrix';
 import ComparaisonPrix from './ComparaisonPrix';
+import heroImg from '../../assets/wapibei.png';
+import ProfilVendeur from '../marketplace/ProfilVendeur';
 
 function Accueil() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
   const [searchInput, setSearchInput] = React.useState('');
@@ -27,18 +33,6 @@ function Accueil() {
     return () => clearTimeout(id);
   }, [searchInput]);
 
-  const initialProducts = [
-    { id: 1, nom: "Riz 5kg", prix: "12 000 FC", category: 'Céréales', description: 'Riz blanc de qualité, emballé 5kg.', image: "https://images.pexels.com/photos/4110008/pexels-photo-4110008.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.8 },
-    { id: 2, nom: "Huile 1L", prix: "3 500 FC", category: 'Épicerie', description: 'Huile de cuisson raffinée, bouteille 1L.', image: "https://images.pexels.com/photos/33783/olive-oil-salad-dressing-cooking-olive.jpg?auto=compress&cs=tinysrgb&w=800", rating: 4.5 },
-    { id: 3, nom: "Sucre 1kg", prix: "1 200 FC", category: 'Épicerie', description: 'Sucre blanc cristallisé, sachet 1kg.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.2 },
-    { id: 4, nom: "Haricots rouges 2kg", prix: "3 000 FC", category: 'Légumineuses', description: 'Haricots rouges secs, sac 2kg.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.0 },
-    { id: 5, nom: "Farine de maïs 1kg", prix: "1 000 FC", category: 'Céréales', description: 'Farine de maïs jaune, sachet 1kg.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.3 },
-    { id: 6, nom: "Sel fin 500g", prix: "400 FC", category: 'Épicerie', description: 'Sel fin iodé, sachet 500g.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.1 },
-    { id: 7, nom: "Lait en poudre 400g", prix: "2 800 FC", category: 'Produits laitiers', description: 'Lait en poudre entier, boîte 400g.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.6 },
-    { id: 8, nom: "Spaghetti 500g", prix: "900 FC", category: 'Pâtes', description: 'Spaghetti de blé dur, paquet 500g.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.4 },
-    { id: 9, nom: "Tomates fraîches 1kg", prix: "1 500 FC", category: 'Fruits & Légumes', description: 'Tomates rouges fraîches, 1kg.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.7 },
-    { id: 10, nom: "Oignons 1kg", prix: "1 200 FC", category: 'Fruits & Légumes', description: 'Oignons jaunes, 1kg.', image: "https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&cs=tinysrgb&w=800", rating: 4.5 }
-  ];
 
   const [products, setProducts] = React.useState(() => {
     try {
@@ -131,40 +125,65 @@ function Accueil() {
   });
 
   const [modalType, setModalType] = React.useState(null);
+  const [sellerProfileId, setSellerProfileId] = React.useState(null);
   const openModal = (type) => setModalType(type);
   const closeModal = () => setModalType(null);
+  const openSellerProfile = (id) => { setSellerProfileId(id); setModalType('sellerProfile'); };
+
+  const handlePublishClick = async () => {
+    const user = authService.getCurrentUser();
+    if (!user) { navigate('/connexion'); return; }
+    try {
+      const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const res = await fetch(`${BASE}/api/sellers/${user.id}`);
+      if (!res.ok) {
+        openSellerProfile(user.id);
+        return;
+      }
+      const data = await res.json();
+      if (data.boutique) {
+        // navigate to /publier which is guarded
+        navigate('/publier');
+      } else {
+        openSellerProfile(user.id);
+      }
+    } catch (e) {
+      openSellerProfile(user.id);
+    }
+  };
 
   return (
     <div className="acc-root min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 py-10">
       {/* Hero Section */}
       <div className="acc-hero relative">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-gradient-to-r from-green-600 to-emerald-500 rounded-2xl text-white p-10 shadow-lg overflow-hidden">
-            <div className="md:flex md:items-center md:justify-between">
+          <div className="bg-gradient-to-r from-green-600 to-emerald-500 rounded-2xl text-white p-8 lg:p-10 shadow-lg overflow-hidden">
+            <div className="md:flex md:items-center md:justify-between gap-6">
               <div className="max-w-2xl">
-                <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">Bienvenue sur <span className="text-yellow-200">WapiBei</span></h1>
+                <h1 className="text-4xl md:text-5xl font-extrabold leading-tight"> <span className="text-yellow-200">WapiBei</span> Comparez, publiez et économisez sur vos achats partout en Afrique</h1>
                 <p className="mt-4 text-lg text-green-100">Découvrez les meilleurs produits alimentaires aux meilleurs prix. Comparez, commandez et faites-vous livrer en toute simplicité.</p>
-                <div className="mt-6 flex gap-3">
-                  <Link to="/produits/marketplace" className="inline-flex items-center px-5 py-3 bg-white/20 hover:bg-white/30 rounded-lg text-white font-semibold shadow">Explorer le marché</Link>
-                  <button onClick={() => openModal('publier')} className="inline-flex items-center px-5 py-3 bg-yellow-400 hover:bg-yellow-500 rounded-lg text-gray-900 font-semibold shadow">Publier un prix</button>
-                </div>
               </div>
-              <div className="hidden md:block md:ml-8">
-                <img src="/uploads/hero-products.png" alt="Produits" className="w-56 h-40 object-cover rounded-lg shadow-xl" />
+              <div className="hidden lg:block lg:ml-8">
+                <img src={heroImg} alt="Produits" className="w-64 h-44 object-cover rounded-xl shadow-xl" />
               </div>
             </div>
           </div>
 
           {/* Search Bar */}
           <div className="acc-search relative max-w-2xl mx-auto mt-6">
-            <Search className="acc-search-icon absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5" />
+            <Search className="acc-search-icon absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              aria-label="Rechercher des produits"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               type="text"
               placeholder="Rechercher un produit (ex: Riz, Huile, Tomates...)"
-              className="acc-search-input w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 shadow-sm focus:ring-4 focus:ring-emerald-200 focus:outline-none text-gray-800 bg-white"
+              className="acc-search-input w-full pl-12 pr-28 py-4 rounded-2xl border border-gray-200 shadow-sm focus:ring-4 focus:ring-emerald-200 focus:outline-none text-gray-800 bg-white"
             />
+            {searchInput && (
+              <button aria-label="Effacer" onClick={() => setSearchInput('')} className="absolute right-20 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">Effacer</button>
+            )}
+            <button className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-emerald-600 text-white px-4 py-2 rounded-full" onClick={() => setSearch(searchInput)}>Rechercher</button>
           </div>
         
         {/* Decorative wave */}
@@ -178,15 +197,14 @@ function Accueil() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Category Filter & Quick Actions */}
         <div className="acc-controls flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-4 rounded-lg shadow-sm">
-          <div className="acc-categories-wrap flex-1">
-            <Filter className="acc-icon" />
-            <span className="acc-label" style={{marginRight:8}}>Catégories:</span>
-            <div className="acc-categories">
+          <div className="acc-categories-wrap flex-1 flex items-center gap-3 overflow-x-auto py-2">
+            <Filter className="acc-icon text-gray-500" />
+            <div className="flex gap-2">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategory(cat)}
-                  className={`px-3 py-1 mr-2 mb-2 rounded-md border ${category === cat ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                  className={`px-3 py-1 rounded-full whitespace-nowrap border ${category === cat ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-gray-700 border-gray-200'}`}
                 >
                   {cat}
                 </button>
@@ -194,7 +212,15 @@ function Accueil() {
             </div>
           </div>
 
-          <div className="acc-quick-actions flex gap-3">
+          <div className="acc-quick-actions flex gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Trier par:</label>
+              <select className="border rounded-md px-3 py-2" onChange={(e) => setViewMode(e.target.value)} value={viewMode}>
+                <option value="grid">Popularité</option>
+                <option value="list">Prix: bas → haut</option>
+                <option value="compact">Prix: haut → bas</option>
+              </select>
+            </div>
             <button className="px-4 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700" onClick={() => openModal('publier')}>Publier</button>
             <button className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-md hover:bg-emerald-50" onClick={() => openModal('comparer')}>Comparer</button>
             <Link to="./marketplace/MarketPlace.jsx" className="px-4 py-2 border border-gray-200 rounded-md hover:shadow">Marketplace</Link>
@@ -242,7 +268,7 @@ function Accueil() {
                 </div>
               ))
             : filtered.map((produit) => (
-                <div key={produit.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <div key={produit.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
                   <ProductCard 
                     produit={produit} 
                     onAdd={() => addToCart(produit, 1)}
@@ -250,6 +276,13 @@ function Accueil() {
                   />
                 </div>
               ))}
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-8 flex items-center justify-center gap-3">
+          <button className="px-3 py-2 border rounded-md">Préc</button>
+          <div className="px-4 py-2">Page 1</div>
+          <button className="px-3 py-2 border rounded-md">Suiv</button>
         </div>
 
         {filtered.length === 0 && !isLoading && (
@@ -323,6 +356,11 @@ function Accueil() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+              {modalType === 'sellerProfile' && (
+                <div>
+                  <ProfilVendeur sellerId={sellerProfileId} />
                 </div>
               )}
             </div>

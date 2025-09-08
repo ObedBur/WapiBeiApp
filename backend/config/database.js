@@ -33,9 +33,19 @@ const initDatabase = () => {
             role TEXT CHECK(role IN ('acheteur', 'vendeur')) DEFAULT 'acheteur',
             date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
             derniere_connexion DATETIME,
-            statut TEXT CHECK(statut IN ('actif', 'inactif', 'en_attente')) DEFAULT 'en_attente'
+            statut TEXT CHECK(statut IN ('actif', 'inactif', 'en_attente')) DEFAULT 'en_attente',
+            ville TEXT,
+            pays TEXT
         )
     `);
+
+    // If migrating an existing DB, ensure columns exist (SQLite will throw if already added)
+    try {
+        db.prepare("ALTER TABLE users ADD COLUMN ville TEXT").run();
+    } catch (e) { /* column may already exist */ }
+    try {
+        db.prepare("ALTER TABLE users ADD COLUMN pays TEXT").run();
+    } catch (e) { /* column may already exist */ }
 
     // Table otp_verifications
     db.exec(`
@@ -62,9 +72,104 @@ const initDatabase = () => {
         )
     `);
 };
-
-// Initialiser la base de données
 initDatabase();
+// Table boutique
+db.exec(`
+    CREATE TABLE IF NOT EXISTS boutique (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        nomboutique TEXT,
+        localisation TEXT,
+        logo TEXT,
+        description TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+`);
+
+// Table products
+db.exec(`
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seller_id INTEGER,
+        name TEXT NOT NULL,
+        price TEXT,
+        quantity TEXT,
+        unit TEXT,
+        city TEXT,
+        country TEXT,
+        image TEXT,
+        description TEXT,
+        date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+`);
+
+// Table conversations
+db.exec(`
+    CREATE TABLE IF NOT EXISTS conversations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        partner_id INTEGER,
+        lastMessage TEXT,
+        FOREIGN KEY (partner_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+`);
+
+// Table messages
+db.exec(`
+    CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversationId INTEGER,
+        senderId INTEGER,
+        content TEXT,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (conversationId) REFERENCES conversations(id) ON DELETE CASCADE,
+        FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE
+    )
+`);
+
+
+// Ensure users have a boutique_json column and date_inscription set
+try {
+    // Add boutique_json column to users if it doesn't exist
+    db.prepare("ALTER TABLE users ADD COLUMN boutique_json TEXT").run();
+} catch (e) { /* column may already exist */ }
+
+// Ensure existing users have a date_inscription set to now if null
+try {
+    db.prepare("UPDATE users SET date_inscription = datetime('now') WHERE date_inscription IS NULL").run();
+} catch (e) {
+    // ignore
+}
+
+// Ensure messages table has replyTo and create message_reactions table
+try {
+    db.prepare("ALTER TABLE messages ADD COLUMN replyTo INTEGER").run();
+} catch (e) { /* column may already exist */ }
+
+// Add attachment_url, isDraft, scheduledAt to messages table if missing
+try {
+    db.prepare("ALTER TABLE messages ADD COLUMN attachment_url TEXT").run();
+} catch (e) { /* may exist */ }
+try {
+    db.prepare("ALTER TABLE messages ADD COLUMN isDraft INTEGER DEFAULT 0").run();
+} catch (e) { /* may exist */ }
+try {
+    db.prepare("ALTER TABLE messages ADD COLUMN scheduledAt DATETIME").run();
+} catch (e) { /* may exist */ }
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS message_reactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        messageId INTEGER,
+        userId INTEGER,
+        emoji TEXT,
+        date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (messageId) REFERENCES messages(id) ON DELETE CASCADE,
+        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    )
+`);
+
 
 // Fournir une API compatible `pool.query` utilisée dans le code backend
 const query = (sql, params = []) => {
