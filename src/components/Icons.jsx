@@ -33,6 +33,20 @@ export const ArrowRight = (props) => (
   </svg>
 );
 
+export const Info = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M12 8h.01M11 12h1v4h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const Mail = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M3 8.5v7A2.5 2.5 0 005.5 18h13a2.5 2.5 0 002.5-2.5v-7A2.5 2.5 0 0018.5 6h-13A2.5 2.5 0 003 8.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M21 8.5l-9 6-9-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export const Heart = (props) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M20.8 7.2a4.6 4.6 0 00-6.4 0L12 9.6l-2.4-2.4a4.6 4.6 0 10-6.4 6.4L12 22l8.8-8.4a4.6 4.6 0 000-6.4z" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
@@ -43,6 +57,12 @@ export const Eye = (props) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+export const X = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -83,9 +103,16 @@ export const LogOut = (props) => (
   </svg>
 );
 
+export const Globe = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2.05 12H21.95M12 2.05v19.9M16.95 6.95C15.4 8.5 12.9 9.5 12 9.5s-3.4-1-4.95-2.55M16.95 17.05C15.4 15.5 12.9 14.5 12 14.5s-3.4 1-4.95 2.55" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export default {
-  ShoppingCart, Search, Filter, Star, ArrowRight, Heart, Eye
-  , User, Bell, Lock, HelpCircle, LogOut
+  ShoppingCart, Search, Filter, Star, ArrowRight, Info, Mail, Heart, Eye, X
+  , User, Bell, Lock, HelpCircle, LogOut, Globe
 };
 
 

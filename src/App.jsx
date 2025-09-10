@@ -10,6 +10,7 @@ import VerificationOTP from './modules/auth/VerificationOTP';
 import Marketplace from './modules/marketplace/Marketplace';
 import ProfilVendeur from './modules/marketplace/ProfilVendeur';
 import PublicationPrix from './modules/produits/PublicationPrix';
+import ComparaisonPrix from './modules/produits/ComparaisonPrix';
 import authService from './services/auth.service';
 
 function PublishGuard() {
@@ -25,16 +26,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Accueil />} />
-          <Route path="/connexion" element={<Connexion />} />
-          <Route path="/inscription" element={<Inscription />} />
-          <Route path="/verification-otp" element={<VerificationOTP />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/vendeur/:id" element={<ProfilVendeur />} />
-          <Route path="/publier" element={<PublishGuard />} />
-          <Route Path="/ProductModal" element={<ProductModal/>}/>
+          <Route path="/comparaison" element={<div className="container mx-auto px-4 py-8"><ComparaisonPrix /></div>} />
+          <Route path="/connexion" element={<div className="container mx-auto px-4 py-8"><Connexion /></div>} />
+          <Route path="/inscription" element={<div className="container mx-auto px-4 py-8"><Inscription /></div>} />
+          <Route path="/verification-otp" element={<div className="container mx-auto px-4 py-8"><VerificationOTP /></div>} />
+          <Route path="/marketplace" element={<div className="container mx-auto px-4 py-8"><Marketplace /></div>} />
+          <Route path="/vendeur/:id" element={<div className="container mx-auto px-4 py-8"><ProfilVendeur /></div>} />
+          <Route path="/publier" element={<div className="container mx-auto px-4 py-8"><PublishGuard /></div>} />
+          <Route Path="/ProductModal" element={<div className="container mx-auto px-4 py-8"><ProductModal/></div>} />
         </Routes>
       </main>
       <Footer />

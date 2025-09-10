@@ -1,269 +1,244 @@
-import React, { useState, useRef, useEffect } from 'react';
-import authService from '../../services/auth.service';
+import React, { useState } from 'react';
+import { Star } from '../../components/Icons';
 
-export default function Boutique({ boutique = null, onCreate, onEdit, onManage, owner = false }) {
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', logo: null, shortDescription: '', location: '' });
-  const fileRef = useRef(null);
-  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
-  const [loading, setLoading] = useState(false);
-  const currentUser = authService.getCurrentUser ? authService.getCurrentUser() : null;
-  const userId = currentUser?.id ?? currentUser?.user?.id ?? currentUser?.data?.id ?? currentUser?.userId ?? (typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id) : null) ?? null;
-  const [showSavedLoader, setShowSavedLoader] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [createdBoutique, setCreatedBoutique] = useState(null);
+// Inline icon fallbacks (small, focused)
+const Store = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M3 9l1-4h16l1 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 9v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+const Edit = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M3 21v-3l11-11 3 3L6 21H3z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+const Save = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M17 21v-8H7v8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+const X = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+const MapPin = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M12 11.5a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 21s6-4.5 6-9.5A6 6 0 0012 5a6 6 0 00-6 6C6 16.5 12 21 12 21z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
+const Clock = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+);
+const Package = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M21 16V8a2 2 0 00-1-1.73L13 3a2 2 0 00-2 0L4 6.27A2 2 0 003 8v8a2 2 0 001 1.73L11 21a2 2 0 002 0l8-4.27A2 2 0 0021 16z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+);
 
-  const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+export default function Boutique({ boutique, owner = false, onCreate, onEdit, onManage }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: boutique?.name || '',
+    description: boutique?.description || '',
+    address: boutique?.address || '',
+    hours: boutique?.hours || '9h-18h',
+    category: boutique?.category || 'Mode'
+  });
 
-  const resolveImageUrl = (src) => {
-    if (!src) return null;
-    try {
-      if (typeof src !== 'string') return src;
-      if (src.startsWith('blob:')) return src;
-      if (/^https?:\/\//i.test(src)) return src;
-      if (src.startsWith('/uploads')) return `${BASE}${src}`;
-      return src;
-    } catch (e) {
-      return src;
-    }
-  };
-
-  const handleLogo = (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    // store the File object for FormData upload and also generate preview
-    setForm((s) => ({ ...s, logo: f, preview: URL.createObjectURL(f) }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name) return;
-    const payload = {
-      name: form.name || '',
-      shortDescription: form.shortDescription || '',
-      location: form.location || '',
-      logo: form.preview || (typeof form.logo === 'string' ? form.logo : null)
+  const handleSave = () => {
+    const newBoutique = {
+      id: boutique?.id || Date.now(),
+      ...formData
     };
-    setLoading(true);
-    if (!userId) {
-      setToastMessage('Vous devez être connecté pour créer une boutique.');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3500);
-      setLoading(false);
-      return;
-    }
-    let success = false;
-    let successMsg = '';
-    try {
-      // Build FormData when file is present
-      const fd = new FormData();
-      fd.append('name', form.name || '');
-      fd.append('shortDescription', form.shortDescription || '');
-      fd.append('location', form.location || '');
-      if (form.logo && form.logo instanceof File) {
-        fd.append('logo', form.logo);
-      } else if (form.logo && typeof form.logo === 'string') {
-        // existing URL or base64 string fallback
-        fd.append('logo', form.logo);
-      }
-
-      if (modalMode === 'create') {
-        // POST
-        const res = await fetch(`${BASE}/api/sellers/${userId}/boutique`, { method: 'POST', body: fd });
-        if (!res.ok) throw new Error('Erreur création boutique');
-        const data = await res.json();
-        onCreate && onCreate(data.boutique || payload);
-        // show visual confirmation on HTTP 201
-        const created = data.boutique || payload;
-        // flag if logo is a blob preview so we can revoke it later
-        if (created && typeof created.logo === 'string' && created.logo.startsWith('blob:')) created._isPreview = true;
-        setCreatedBoutique(created);
-        setShowConfirmation(true);
-        success = true; successMsg = 'Boutique créée avec succès';
-      } else {
-        const res = await fetch(`${BASE}/api/sellers/${userId}/boutique`, { method: 'PUT', body: fd });
-        if (!res.ok) throw new Error('Erreur mise à jour boutique');
-        const data = await res.json();
-        onEdit && onEdit(data.boutique || payload);
-        success = true; successMsg = 'Boutique mise à jour';
-      }
-    } catch (err) {
-      console.error(err);
-      // fallback to local update
-      if (modalMode === 'create') {
-        const newBoutique = { id: Date.now(), ...payload };
-        onCreate && onCreate(newBoutique);
-      } else {
-        const updated = { ...(boutique || {}), ...payload };
-        onEdit && onEdit(updated);
-      }
-    } finally {
-      setLoading(false);
-    }
-
-    // Close modal, show a short saved loader then a toast
-    // (Do not revoke preview here to avoid blob-not-found when image still rendered)
-    setForm({ name: '', logo: null, preview: null, shortDescription: '', location: '' });
-    setShowModal(false);
-
-    if (success) {
-      setShowSavedLoader(true);
-      setTimeout(() => {
-        setShowSavedLoader(false);
-        setToastMessage(successMsg);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3500);
-      }, 900);
+    
+    if (boutique) {
+      onEdit?.(newBoutique);
     } else {
-      setToastMessage('Erreur lors de la sauvegarde.');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3500);
+      onCreate?.(newBoutique);
     }
-    // keep createdBoutique modal visible even after closing form so user sees confirmation
-    if (!success) {
-      setCreatedBoutique(null);
-      setShowConfirmation(false);
-    }
+    setIsEditing(false);
   };
 
-  if (!boutique) {
+  const handleCancel = () => {
+    setFormData({
+      name: boutique?.name || '',
+      description: boutique?.description || '',
+      address: boutique?.address || '',
+      hours: boutique?.hours || '9h-18h',
+      category: boutique?.category || 'Mode'
+    });
+    setIsEditing(false);
+  };
+
+  if (!boutique && !owner) {
     return (
-      <div className="text-center py-10">
-        <h3 className="text-2xl font-extrabold mb-3">Vous n’avez pas encore créé de boutique.</h3>
-        <p className="text-gray-500 mb-6">Créez votre boutique pour commencer à publier des produits et toucher des clients.</p>
-        {owner ? (
-          <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-semibold shadow">+ Créer ma boutique</button>
-        ) : (
-          <div className="text-gray-500">Le vendeur n’a pas encore de boutique.</div>
-        )}
+      <div className="text-center py-16">
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Store className="w-12 h-12 text-gray-400" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucune boutique</h3>
+        <p className="text-gray-600">Ce vendeur n'a pas encore créé sa boutique.</p>
+      </div>
+    );
+  }
 
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
-            <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden">
-              <div className="relative bg-gradient-to-r from-emerald-600 to-teal-500 p-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-white">
-                    <h3 className="text-2xl font-bold">Créer ma boutique</h3>
-                    <p className="mt-1 opacity-90">Renseignez les informations principales pour lancer votre boutique.</p>
-                  </div>
-                  <button onClick={() => setShowModal(false)} className="text-white text-2xl leading-none">×</button>
-                </div>
-                <div className="absolute -bottom-8 left-6">
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden">
-                    {(form.preview || (form.logo && typeof form.logo === 'string')) ? (
-                      <img src={resolveImageUrl(form.preview || form.logo)} alt="logo" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-emerald-600 font-bold">B</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6 pt-14 grid grid-cols-1 gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nom de la boutique</label>
-                    <input className="mt-1 block w-full rounded-lg border-gray-200 shadow-sm p-3" value={form.name} onChange={(e)=>setForm(f=>({...f,name:e.target.value}))} placeholder="Ex: Boutique de Mamadou" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Localisation</label>
-                    <input className="mt-1 block w-full rounded-lg border-gray-200 shadow-sm p-3" value={form.location} onChange={(e)=>setForm(f=>({...f,location:e.target.value}))} placeholder="Ville, Pays" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">Description courte</label>
-                    <textarea className="mt-1 block w-full rounded-lg border-gray-200 shadow-sm p-3" value={form.shortDescription} onChange={(e)=>setForm(f=>({...f,shortDescription:e.target.value}))} rows={3} placeholder="Une phrase qui présente votre boutique"></textarea>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Logo / image</label>
-                    <div className="mt-2">
-                      <input ref={fileRef} type="file" accept="image/*" onChange={handleLogo} className="hidden" />
-                      <div className="h-36 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center p-3 bg-gray-50">
-                        {(form.preview || (form.logo && typeof form.logo === 'string')) ? (
-                          <img src={resolveImageUrl(form.preview || form.logo)} alt="preview" className="max-h-28 object-contain rounded" />
-                        ) : (
-                          <div className="text-center text-gray-500">
-                            <div className="mb-2">Logo de la boutique</div>
-                            <button type="button" onClick={() => fileRef.current && fileRef.current.click()} className="px-4 py-2 bg-white border rounded shadow">Choisir un logo</button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg border">Annuler</button>
-                  <button type="submit" disabled={loading} className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700 disabled:opacity-50">{loading ? 'En cours...' : (modalMode === 'create' ? 'Créer ma boutique' : 'Enregistrer les modifications')}</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+  if (!boutique && owner) {
+    return (
+      <div className="text-center py-16">
+        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Store className="w-12 h-12 text-blue-600" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-3">Créer votre boutique</h3>
+        <p className="text-gray-600 mb-8 max-w-md mx-auto">
+          Créez votre boutique pour commencer à vendre vos produits et attirer des clients.
+        </p>
+        
+        <div className="max-w-md mx-auto space-y-4">
+          <input
+            type="text"
+            placeholder="Nom de votre boutique"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <textarea
+            placeholder="Description de votre boutique"
+            value={formData.description}
+            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          />
+          <button 
+            onClick={handleSave}
+            disabled={!formData.name.trim()}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Créer ma boutique
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-    <div className="border rounded-lg overflow-hidden shadow-sm">
-      <div className="bg-gradient-to-r from-emerald-50 to-white p-4 flex items-start gap-4">
-        <div className="flex-shrink-0">
-          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-emerald-200">
-            {boutique.logo ? <img src={resolveImageUrl(boutique.logo)} alt={boutique.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">B</div>}
-          </div>
-        </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-2xl font-extrabold text-gray-800">{boutique.name}</div>
-              <div className="text-sm text-gray-500 mt-1">{boutique.location}</div>
+    <div className="space-y-8">
+      {/* Boutique Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center">
+              <Store className="w-8 h-8 text-white" />
             </div>
-            <div className="flex items-center gap-2">
-              {owner && (
+            <div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="text-3xl font-bold text-gray-900 bg-transparent border-b-2 border-blue-300 focus:border-blue-500 outline-none"
+                />
+              ) : (
+                <h1 className="text-3xl font-bold text-gray-900">{boutique.name}</h1>
+              )}
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-500" />
+                  <span>4.8 (127 avis)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Package className="w-4 h-4" />
+                  <span>45 produits</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {owner && (
+            <div className="flex gap-2">
+              {isEditing ? (
                 <>
-                  <button onClick={() => { setModalMode('edit'); setForm({ name: boutique.name || '', logo: boutique.logo || null, shortDescription: boutique.shortDescription || '', location: boutique.location || '' }); setShowModal(true); }} className="px-3 py-1 rounded-md border border-gray-200 bg-white text-gray-700 hover:shadow">Modifier</button>
-                  <button onClick={() => onManage && onManage()} className="px-3 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Gérer produits</button>
+                  <button 
+                    onClick={handleSave}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Save className="w-4 h-4" />
+                    Sauvegarder
+                  </button>
+                  <button 
+                    onClick={handleCancel}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Annuler
+                  </button>
                 </>
+              ) : (
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier
+                </button>
               )}
             </div>
-          </div>
-          <p className="mt-3 text-gray-700">{boutique.shortDescription}</p>
+          )}
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+            {isEditing ? (
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+            ) : (
+              <p className="text-gray-600 leading-relaxed">
+                {boutique.description || "Aucune description disponible."}
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Informations</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4" />
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      placeholder="Adresse"
+                      className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  ) : (
+                    <span>{boutique.address || "Adresse non renseignée"}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Clock className="w-4 h-4" />
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={formData.hours}
+                      onChange={(e) => setFormData({...formData, hours: e.target.value})}
+                      placeholder="Horaires"
+                      className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  ) : (
+                    <span>{boutique.hours || "Horaires non renseignés"}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {owner && !isEditing && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button 
+              onClick={onManage}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+            >
+              Gérer mes produits
+            </button>
+          </div>
+        )}
       </div>
     </div>
-    {showSavedLoader && (
-      <div className="fixed inset-0 z-60 flex items-center justify-center pointer-events-none">
-        <div className="bg-white/90 p-6 rounded-lg shadow-lg flex items-center gap-4">
-          <svg className="animate-spin h-6 w-6 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-          <div className="text-gray-700">Sauvegarde en cours...</div>
-        </div>
-      </div>
-    )}
-
-    {showToast && (
-      <div className="fixed bottom-6 right-6 z-70">
-        <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg">{toastMessage}</div>
-      </div>
-    )}
-
-    {showConfirmation && createdBoutique && (
-      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 px-4">
-        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden p-6 text-center">
-          <h3 className="text-xl font-bold mb-2">Boutique créée</h3>
-          <p className="text-gray-700 mb-4">Votre boutique "{createdBoutique.name || 'Ma boutique'}" a été créée avec succès.</p>
-          <div className="flex justify-center gap-3">
-            <button onClick={() => { try { if (createdBoutique && typeof createdBoutique.logo === 'string' && createdBoutique.logo.startsWith('blob:')) URL.revokeObjectURL(createdBoutique.logo); } catch(e) {} if (onManage) { onManage(); } else { if (typeof window !== 'undefined') window.location.reload(); } setShowConfirmation(false); setCreatedBoutique(null); }} className="px-4 py-2 rounded-lg border">Fermer</button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   );
 }

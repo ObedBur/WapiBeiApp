@@ -1,6 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search, ShoppingCart, User, Star, X, Eye, Mail } from '../../components/Icons';
 import authService from '../../services/auth.service';
+
+// Small fallback icon components (emoji-based) for UI consistency when lucide-react is not installed
+const MapPin = (props) => <span {...props} aria-hidden>📍</span>;
+const Tag = (props) => <span {...props} aria-hidden>🏷️</span>;
+const Grid = (props) => <span {...props} aria-hidden>▦</span>;
+const List = (props) => <span {...props} aria-hidden>≡</span>;
+const Phone = (props) => <span {...props} aria-hidden>📞</span>;
+const MessageCircle = (props) => <span {...props} aria-hidden>💬</span>;
+const Plus = (props) => <span {...props} aria-hidden>+</span>;
+const Minus = (props) => <span {...props} aria-hidden>−</span>;
+const Trash2 = (props) => <span {...props} aria-hidden>🗑️</span>;
+const Filter = (props) => <span {...props} aria-hidden>⚙️</span>;
 
 export default function Marketplace() {
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -100,7 +113,7 @@ export default function Marketplace() {
 
   // Resolve image paths (prefix /uploads with BASE)
   const resolveImageUrl = (src) => {
-    if (!src) return null;
+    if (!src) return 'https://images.pexels.com/photos/4465124/pexels-photo-4465124.jpeg?auto=compress&cs=tinysrgb&w=400';
     try {
       if (typeof src !== 'string') return src;
       if (src.startsWith('blob:')) return src;
@@ -306,414 +319,591 @@ export default function Marketplace() {
   const onClear = () => setCart([]);
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <header className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <img src="/src/assets/wapibei.png" alt="WapiBei" className="w-28 h-10 object-contain" />
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">W</span>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                WapiBei
+              </span>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex-1 max-w-2xl mx-8">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Rechercher un produit, une catégorie ou un vendeur..."
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setCartOpen(true)}
+                className="relative p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+              >
+                <ShoppingCart className="w-5 h-5 text-gray-600" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                    {cart.reduce((s,i)=>s+(i.qty||1),0)}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => navigate('/profil')}
+                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors duration-200"
+              >
+                {currentUserData?.avatar ? (
+                  <img 
+                    src={currentUserData.avatar.startsWith('/uploads') ? `${BASE}${currentUserData.avatar}` : currentUserData.avatar} 
+                    alt="profile" 
+                    className="w-8 h-8 rounded-full object-cover border-2 border-emerald-500" 
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <User className="w-4 h-4 text-emerald-600" />
+                  </div>
+                )}
+                <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                  {currentUserData?.name || 'Profil'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filters */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 p-6 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            {/* Filter Controls */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={cityFilter} 
+                  onChange={(e) => setCityFilter(e.target.value)} 
+                  className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="all">Toutes villes</option>
+                  {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-gray-500" />
+                <select 
+                  value={categoryFilter} 
+                  onChange={(e) => setCategoryFilter(e.target.value)} 
+                  className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="all">Toutes catégories</option>
+                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Prix:</span>
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value)}
+                  className="w-20 px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <span className="text-gray-400">—</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value)}
+                  className="w-20 px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <button
+                onClick={() => { 
+                  setQuery(''); 
+                  setCityFilter('all'); 
+                  setCategoryFilter('all'); 
+                  setPriceMin(''); 
+                  setPriceMax(''); 
+                  showToast('Filtres réinitialisés'); 
+                }}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              >
+                Réinitialiser
+              </button>
+            </div>
+
+            {/* Sort and View Controls */}
+            <div className="flex items-center gap-4">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="relevance">Nom (A → Z)</option>
+                <option value="price-asc">Prix croissant</option>
+                <option value="price-desc">Prix décroissant</option>
+                <option value="rating">Popularité</option>
+              </select>
+
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setView('grid')}
+                  className={`p-2 rounded-md transition-colors duration-200 ${
+                    view === 'grid' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setView('list')}
+                  className={`p-2 rounded-md transition-colors duration-200 ${
+                    view === 'list' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="w-full mt-4">
-          <div className="bg-white p-3 rounded-lg shadow-sm">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="flex-1">
-                <div className="relative">
-                  <input
-                    aria-label="Rechercher des produits ou vendeurs"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Rechercher un produit, une catégorie ou un vendeur..."
-                    className="w-full md:w-96 pl-4 pr-12 py-2 rounded-lg border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm"
-                  />
+        {/* Products Grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+          </div>
+        ) : (
+          <div className={view === 'grid' ? 'grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'space-y-4'}>
+            {sorted.length === 0 ? (
+              <div className="col-span-full text-center py-20">
+                <div className="text-gray-400 text-lg mb-2">Aucun produit trouvé</div>
+                <p className="text-gray-500">Essayez de modifier vos filtres de recherche</p>
+              </div>
+            ) : (
+              sorted.map(product => (
+                <article key={product.id} className="group bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden hover:shadow-lg hover:border-emerald-200 transition-all duration-300">
+                  <div className={view === 'grid' ? 'flex flex-col' : 'flex'}>
+                    <div className="relative overflow-hidden">
+                      <img 
+                        src={resolveImageUrl(product.image)} 
+                        alt={product.name} 
+                        className={`${view === 'grid' ? 'w-full h-48' : 'w-48 h-32'} object-cover group-hover:scale-105 transition-transform duration-300`} 
+                      />
+                      <div className="absolute top-3 right-3">
+                        <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
+                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                          <span className="text-xs font-medium">{product.rating?.toFixed?.(1) ?? '—'}</span>
+                        </div>
+                      </div>
+                      {product.availability === 'out_of_stock' && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">Épuisé</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900 text-lg leading-tight">{product.name}</h3>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                          <MapPin className="w-3 h-3" />
+                          <span>{product.city}</span>
+                          <span>•</span>
+                          <Tag className="w-3 h-3" />
+                          <span>{product.category}</span>
+                        </div>
+
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            {formatPrice(product.price)} {String(product.price || '').includes('USD') ? 'USD' : 'FC'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {product.seller_id ? (sellersById[product.seller_id]?.name || 'Vendeur inconnu') : 'Vendeur inconnu'}
+                          </div>
+                        </div>
+
+                        {product.availability && (
+                          <div className="mb-3">
+                            {product.availability === 'in_stock' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                En stock
+                              </span>
+                            )}
+                            {product.availability === 'low_stock' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Stock limité
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                        <button 
+                          onClick={() => setSelectedProduct(product)} 
+                          className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Voir vendeurs
+                        </button>
+                        <button 
+                          onClick={() => addToCart(product, product.sellers?.[0])} 
+                          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                          disabled={product.availability === 'out_of_stock'}
+                        >
+                          <Plus className="w-4 h-4" />
+                          Ajouter
+                        </button>
+                      </div>
+
+                      {/* Sellers preview */}
+                      {product.sellers && product.sellers.length > 0 && (
+                        <div className="mt-3 flex gap-2 overflow-x-auto">
+                          {product.sellers.slice(0, 3).map(s => (
+                            <button 
+                              key={s.id} 
+                              onClick={() => openSellerModal(s.id, s)} 
+                              className="flex-shrink-0 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg border text-left transition-colors duration-200"
+                            >
+                              <div className="text-sm font-medium">{s.name}</div>
+                              <div className="text-xs text-gray-500">{s.city} • {formatPrice(s.price)} FC</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Product Sellers Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">Vendeurs — {selectedProduct.name}</h3>
+              <button 
+                onClick={() => setSelectedProduct(null)} 
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="space-y-4">
+                {selectedProductSellers.map(s => (
+                  <div key={s.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-emerald-200 transition-colors duration-200">
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 mb-1">
+                        {s.name} <span className="text-sm text-gray-500 font-normal">({s.city})</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                          <span>{s.rating}/5</span>
+                        </div>
+                        <div className="font-medium text-emerald-600">
+                          {formatPrice(s.price)} {String(s.price || '').includes('USD') ? 'USD' : 'FC'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          const full = await fetchSellerIfNeeded(s.id) || s;
+                          const partner = {
+                            id: full?.id ?? s?.id,
+                            name: full?.name || `${full?.nom || ''} ${full?.prenom || ''}`.trim() || full?.email || s?.name,
+                            email: full?.email || s?.email || null,
+                            nom: full?.nom || null,
+                            prenom: full?.prenom || null,
+                          };
+                          try {
+                            localStorage.setItem('messagerie_open_with', JSON.stringify(partner));
+                            window.dispatchEvent(new Event('open-messagerie'));
+                          } catch (e) {
+                            console.error('Unable to open messagerie:', e);
+                          }
+                          setSelectedProduct(null);
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                      >
+                        Contacter
+                      </button>
+                      <button
+                        onClick={() => {
+                          openSellerModal(s.id, s);
+                          setSelectedProduct(null);
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors duration-200"
+                      >
+                        Voir boutique
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {contact.avatar ? (
+                    <img 
+                      src={String(contact.avatar).startsWith('/uploads') ? `${BASE}${contact.avatar}` : contact.avatar} 
+                      alt={contact.name || 'avatar'} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <User className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">{contact.name || 'Vendeur'}</div>
+                  <div className="text-sm text-gray-500">{contact.city || ''}</div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowContactModal(false)} 
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="text-sm text-gray-600 mb-4">Choisissez un mode de contact</div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    if (!contact.whatsapp) return;
+                    const num = normalizePhone(contact.whatsapp);
+                    if (num) window.open(`https://wa.me/${num.replace(/^\+/, '')}`, "_blank");
+                    setShowContactModal(false);
+                  }}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                    contact.whatsapp 
+                      ? 'border-green-200 bg-green-50 hover:bg-green-100 text-green-800' 
+                      : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={!contact.whatsapp}
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageCircle className="w-5 h-5" />
+                    <span className="font-medium">WhatsApp</span>
+                  </div>
+                  <span className="text-sm opacity-80">{contact.whatsapp || 'Non disponible'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!contact.phone) return;
+                    const normalizedPhone = normalizePhone(contact.phone);
+                    if (normalizedPhone) {
+                      window.location.href = `tel:${normalizedPhone}`;
+                    } else {
+                      window.location.href = `tel:${contact.phone}`;
+                    }
+                    setShowContactModal(false);
+                  }}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                    contact.phone 
+                      ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800' 
+                      : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={!contact.phone}
+                >
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5" />
+                    <span className="font-medium">Téléphone</span>
+                  </div>
+                  <span className="text-sm opacity-80">{contact.phone || 'Non disponible'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!contact.email) return;
+                    const subject = selectedProduct?.name ? `Demande au sujet de ${selectedProduct.name}` : `Contact`;
+                    const bodyLines = [];
+                    bodyLines.push(`Bonjour ${contact.name || ''},`);
+                    bodyLines.push('');
+                    if (selectedProduct?.name) {
+                      bodyLines.push(`Je vous contacte concernant le produit : ${selectedProduct.name}.`);
+                    } else {
+                      bodyLines.push('Je vous contacte au sujet d\'une demande.');
+                    }
+                    bodyLines.push('');
+                    bodyLines.push('Cordialement,');
+                    const body = bodyLines.join('\r\n');
+                    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    window.open(gmailUrl, '_blank');
+                    setShowContactModal(false);
+                  }}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                    contact.email 
+                      ? 'border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-800' 
+                      : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={!contact.email}
+                >
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-5 h-5" />
+                    <span className="font-medium">Email</span>
+                  </div>
+                  <span className="text-sm opacity-80">{contact.email || 'Non disponible'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Drawer */}
+      <div className={`fixed inset-0 z-50 ${cartOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <div 
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${cartOpen ? 'opacity-100' : 'opacity-0'}`} 
+          onClick={() => setCartOpen(false)} 
+        />
+        <aside className={`absolute right-0 top-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 ${cartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h4 className="text-lg font-bold text-gray-900">Mon panier</h4>
+            <button 
+              onClick={() => setCartOpen(false)} 
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {cart.length === 0 ? (
+              <div className="text-center py-12">
+                <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <div className="text-gray-500">Votre panier est vide</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {cart.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{item.nom}</div>
+                      <div className="text-sm text-gray-500">{item.prix} FC</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onChangeQty(item.id, Math.max(1, (item.qty || 1) - 1))}
+                        className="p-1 hover:bg-gray-200 rounded"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center font-medium">{item.qty || 1}</span>
+                      <button
+                        onClick={() => onChangeQty(item.id, (item.qty || 1) + 1)}
+                        className="p-1 hover:bg-gray-200 rounded"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onRemove(item.id)}
+                        className="p-1 hover:bg-red-100 text-red-500 rounded ml-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {cart.length > 0 && (
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-lg font-semibold text-gray-900">Total:</span>
+                <span className="text-2xl font-bold text-emerald-600">
+                  {cart.reduce((s,it)=>s + (Number(String(it.prix).replace(/[^0-9.-]+/g, ''))||0) * (it.qty||1), 0).toLocaleString()} FC
+                </span>
+              </div>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => { onClear(); setCartOpen(false); }} 
+                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  Commander maintenant
+                </button>
+                <button 
+                  onClick={() => { onClear(); setCartOpen(false); }} 
+                  className="w-full border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-800 py-3 rounded-xl font-medium transition-all duration-200"
+                >
+                  Vider le panier
+                </button>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
+
+      {/* Seller Modal */}
+      {selectedSeller && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-start justify-between gap-6 p-6 border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {sellerFull?.avatar ? (
+                    <img 
+                      src={sellerFull.avatar.startsWith('/uploads') ? `${BASE}${sellerFull.avatar}` : sellerFull.avatar} 
+                      alt="avatar" 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <User className="w-8 h-8 text-gray-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{sellerFull?.name || selectedSeller.name || 'Vendeur'}</div>
+                  <div className="text-sm text-gray-500 mt-1">{sellerFull?.email || '—'}</div>
+                  <div className="text-sm text-gray-500">{sellerFull?.telephone || '—'}</div>
+                  <div className="text-sm text-gray-500">
+                    {sellerFull?.ville ? `${sellerFull.ville}${sellerFull.pays ? ', ' + sellerFull.pays : ''}` : sellerFull?.pays || '—'}
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <select aria-label="Filtrer par ville" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} className="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-emerald-200">
-                  <option value="all">🌍 Toutes villes</option>
-                  {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-
-                <select aria-label="Filtrer par catégorie" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-emerald-200">
-                  <option value="all">Toutes catégories</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-
-                <button aria-label="Réinitialiser les filtres" onClick={() => { setQuery(''); setCityFilter('all'); setCategoryFilter('all'); setPriceMin(''); setPriceMax(''); showToast('Filtres réinitialisés'); }} className="px-3 py-2 bg-gray-50 border rounded-md text-sm hover:bg-gray-100">Réinitialiser</button>
-
-                <button aria-label="Ouvrir le panier" onClick={() => setCartOpen(true)} className="relative px-3 py-2 bg-white border rounded-md hover:shadow text-sm">
-                  <span>🛒</span>
-                  <span className="ml-2 hidden sm:inline">Panier</span>
-                  <span className="absolute -top-1 -right-2 bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">{cart.reduce((s,i)=>s+(i.qty||1),0)}</span>
-                </button>
-
-                <button title={currentUserData?.name || 'Profil'} aria-label="Voir le profil" onClick={() => navigate('/profil')} className="flex items-center gap-3 px-3 py-2 rounded-full border border-gray-200 hover:shadow-md transition-shadow duration-150">
-                  <div className="flex items-center gap-3">
-                    {currentUserData?.avatar ? (
-                      <img src={currentUserData.avatar.startsWith('/uploads') ? `${BASE}${currentUserData.avatar}` : currentUserData.avatar} alt="profile" className="w-9 h-9 rounded-full object-cover border-2 border-emerald-600 shadow-sm" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center border-2 border-emerald-600 shadow-sm">
-                        <span className="text-emerald-700 font-semibold">{currentUserData?.name?.[0]?.toUpperCase() || '👤'}</span>
-                      </div>
-                    )}
-                    <div className="flex flex-col text-left min-w-0">
-                      <span className="text-emerald-700 font-semibold text-sm leading-tight truncate max-w-[140px]">Profil</span>
-                      {currentUserData?.name && <span className="text-xs text-gray-500 truncate max-w-[140px]">{currentUserData.name}</span>}
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </header>
-
-      {/* Advanced filters */}
-      <section className="mb-6 bg-white p-4 rounded-xl shadow-md">
-  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-    
-    {/* Filtre prix */}
-    <fieldset className="flex items-center gap-2 border border-transparent p-0">
-      <legend className="text-sm font-medium text-gray-600 px-1">Prix</legend>
-      <input
-        type="number"
-        aria-label="Prix minimum"
-        placeholder="Min"
-        value={priceMin}
-        onChange={(e) => { setPriceMin(e.target.value); }}
-        className="px-3 py-2 border border-gray-300 rounded-md w-28 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
-      />
-      <span className="text-gray-500">—</span>
-      <input
-        type="number"
-        aria-label="Prix maximum"
-        placeholder="Max"
-        value={priceMax}
-        onChange={(e) => { setPriceMax(e.target.value); }}
-        className="px-3 py-2 border border-gray-300 rounded-md w-28 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
-      />
-      {/* Inline validation message */}
-      {priceMin !== '' && priceMax !== '' && Number(priceMin) > Number(priceMax) && (
-        <div role="status" aria-live="polite" className="text-sm text-red-600 ml-3">Le prix minimum doit être inférieur ou égal au prix maximum.</div>
-      )}
-    </fieldset>
-
-    {/* Tri + affichage */}
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-600">Trier par :</label>
-        <select
-          id="sort-select"
-          aria-describedby="sort-help"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500"
-        >
-          <option value="relevance">Nom (A → Z)</option>
-          <option value="price-asc">Prix : bas → haut</option>
-          <option value="price-desc">Prix : haut → bas</option>
-          <option value="rating">Popularité </option>
-        </select>
-      </div>
-  
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-600">Affichage :</label>
-        <select
-          value={view}
-          onChange={(e) => setView(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-emerald-500 focus:border-emerald-500"
-        >
-          <option value="grid">Grille</option>
-          <option value="list">Liste</option>
-        </select>
-      </div>
-    </div>
-  </div>
-</section>
-
-      {/* Catalogue */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-500">Chargement des produits...</div>
-      ) : (
-        <div className={view === 'grid' ? 'grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
-          {sorted.length === 0 ? (
-            <div className="text-center text-gray-500 py-10">Aucun produit trouvé.</div>
-          ) : (
-            sorted.map(product => (
-              <article key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className={view === 'grid' ? 'flex flex-col' : 'flex'}>
-                  <img src={resolveImageUrl(product.image)} alt={product.name} className={view === 'grid' ? 'w-full h-44 object-cover' : 'w-44 h-32 object-cover'} />
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold">{product.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span className="font-semibold">{product.rating?.toFixed?.(1) ?? '—'}⭐</span>
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          {product.seller_id ? (sellersById[product.seller_id]?.name || 'Vendeur inconnu') : 'Vendeur inconnu'}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-500">{product.category} • {product.city}</p>
-                      <p className="mt-2 text-gray-700 font-semibold">{formatPrice(product.price)} {String(product.price || '').includes('USD') ? 'USD' : 'FC'}</p>
-                      <p className="mt-2 text-sm text-gray-500">{product.description}</p>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {product.availability === 'in_stock' && <span className="text-sm text-green-700">En stock</span>}
-                        {product.availability === 'low_stock' && <span className="text-sm text-yellow-700">Rupture prochaine</span>}
-                        {product.availability === 'out_of_stock' && <span className="text-sm text-red-600">Épuisé</span>}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setSelectedProduct(product)} className="px-3 py-1 border rounded text-sm">Voir vendeurs</button>
-                        <button onClick={() => addToCart(product, product.sellers?.[0])} className="px-3 py-1 bg-emerald-600 text-white rounded text-sm">Ajouter</button>
-                      </div>
-                    </div>
-
-                    {/* Sellers preview */}
-                    {product.sellers && product.sellers.length > 0 && (
-                      <div className="mt-3 flex gap-3 overflow-x-auto">
-                        {product.sellers.slice(0, 3).map(s => (
-                          <button key={s.id} onClick={() => openSellerModal(s.id, s)} className="flex-shrink-0 bg-gray-50 px-3 py-2 rounded border text-left">
-                            <div className="text-sm font-bold">{s.name}</div>
-                            <div className="text-xs text-gray-500">{s.city} • {formatPrice(s.price)} {String(s.price || '').includes('USD') ? 'USD' : 'FC'}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Product Sellers Modal */}
-      {/* Product Sellers Modal */}
-{selectedProduct && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white rounded-lg p-6 w-11/12 max-w-2xl">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold">Vendeurs — {selectedProduct.name}</h3>
-        <button onClick={() => setSelectedProduct(null)} className="text-gray-500">Fermer</button>
-      </div>
-      <div className="space-y-3">
-        {selectedProductSellers.map(s => (
-          <div key={s.id} className="flex justify-between items-center border p-3 rounded">
-            <div>
-              <div className="font-bold">
-                {s.name} <span className="text-sm text-gray-500">({s.city})</span>
-              </div>
-              <div className="text-sm text-gray-500">Note: {s.rating}/5</div>
-              <div className="text-sm text-gray-500">
-                Prix: {formatPrice(s.price)} {String(s.price || '').includes('USD') ? 'USD' : 'FC'}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <button
-                onClick={async () => {
-                    // Open Messagerie and preload partner info
-                    const full = await fetchSellerIfNeeded(s.id) || s;
-                    const partner = {
-                      id: full?.id ?? s?.id,
-                      name: full?.name || `${full?.nom || ''} ${full?.prenom || ''}`.trim() || full?.email || s?.name,
-                      email: full?.email || s?.email || null,
-                      nom: full?.nom || null,
-                      prenom: full?.prenom || null,
-                    };
-                    try {
-                      localStorage.setItem('messagerie_open_with', JSON.stringify(partner));
-                      window.dispatchEvent(new Event('open-messagerie'));
-                    } catch (e) {
-                      console.error('Unable to open messagerie:', e);
-                    }
-                    // close product modal
-                    setSelectedProduct(null);
-                  }}
-                 className="px-3 py-1 border rounded"
-               >
-                 Contacter
-               </button>
-              <button
-                onClick={() => {
-                  openSellerModal(s.id, s);
-                  setSelectedProduct(null);
-                }}
-                className="text-sm text-blue-600"
-              >
-                Voir la boutique
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
-
-
-{showContactModal && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[99999]">
-    <div className="bg-white p-4 rounded shadow-md w-full max-w-md max-h-[60vh] overflow-y-auto relative z-[100000]">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-            {contact.avatar ? <img src={(String(contact.avatar).startsWith('/uploads') ? `${BASE}${contact.avatar}` : contact.avatar)} alt={contact.name || 'avatar'} className="w-full h-full object-cover" /> : <div className="text-gray-400">No photo</div>}
-          </div>
-          <div>
-            <div className="font-semibold">{contact.name || 'Vendeur'}</div>
-            <div className="text-sm text-gray-500">{contact.city || ''}</div>
-          </div>
-        </div>
-        <button onClick={() => setShowContactModal(false)} className="text-gray-500">×</button>
-      </div>
-
-      <div className="space-y-3">
-        <div className="text-sm text-gray-600">Choisissez un mode de contact</div>
-        <div className="grid gap-2">
-          <button
-            onClick={() => {
-              if (!contact.whatsapp) return;
-              const num = normalizePhone(contact.whatsapp);
-              if (num) window.open(`https://wa.me/${num.replace(/^\+/, '')}`, "_blank");
-              setShowContactModal(false);
-            }}
-            className={contact.whatsapp ? 'px-3 py-2 bg-green-600 text-white rounded w-full flex items-center justify-between' : 'px-3 py-2 bg-gray-200 text-gray-500 rounded w-full flex items-center justify-between cursor-not-allowed'}
-            disabled={!contact.whatsapp}
-          >
-            <span>WhatsApp</span>
-            <span className="text-xs opacity-80">{contact.whatsapp || 'Non disponible'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (!contact.phone) return;
-              const normalizedPhone = normalizePhone(contact.phone);
-              if (normalizedPhone) {
-                window.location.href = `tel:${normalizedPhone}`;
-              } else {
-                window.location.href = `tel:${contact.phone}`;
-              }
-              setShowContactModal(false);
-            }}
-            className={contact.phone ? 'px-3 py-2 bg-blue-600 text-white rounded w-full flex items-center justify-between' : 'px-3 py-2 bg-gray-200 text-gray-500 rounded w-full flex items-center justify-between cursor-not-allowed'}
-            disabled={!contact.phone}
-          >
-            <span>Téléphone</span>
-            <span className="text-xs opacity-80">{contact.phone || 'Non disponible'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (!contact.email) return;
-              const subject = selectedProduct?.name ? `Demande au sujet de ${selectedProduct.name}` : `Contact`;
-              const bodyLines = [];
-              bodyLines.push(`Bonjour ${contact.name || ''},`);
-              bodyLines.push('');
-              if (selectedProduct?.name) {
-                bodyLines.push(`Je vous contacte concernant le produit : ${selectedProduct.name}.`);
-              } else {
-                bodyLines.push('Je vous contacte au sujet d\'une demande.');
-              }
-              bodyLines.push('');
-              bodyLines.push('Cordialement,');
-              const body = bodyLines.join('\r\n');
-              // Open Gmail compose in new tab (webmail) as primary action in production
-              const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contact.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-              window.open(gmailUrl, '_blank');
-              setShowContactModal(false);
-            }}
-            className={contact.email ? 'px-3 py-2 bg-gray-600 text-white rounded w-full flex items-center justify-between' : 'px-3 py-2 bg-gray-200 text-gray-500 rounded w-full flex items-center justify-between cursor-not-allowed'}
-            disabled={!contact.email}
-          >
-            <span>Email</span>
-            <span className="text-xs opacity-80">{contact.email || 'Non disponible'}</span>
-          </button>
-
-          {/* Removed mailto fallback; Gmail web compose is primary action */}
-
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
-
-      {/* Cart Modal */}
-      {cartOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center" onClick={() => setCartOpen(false)}>
-          <div className="bg-white rounded-lg w-full max-w-3xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Panier ({cart.reduce((s,i)=>s+(i.qty||1),0)})</h3>
-              <button onClick={() => setCartOpen(false)} className="text-gray-500">×</button>
-            </div>
-
-            <div className="space-y-4">
-              {cart.length === 0 ? (
-                <div className="text-center text-gray-500 py-6">Votre panier est vide.</div>
-              ) : (
-                <ul className="space-y-4">
-                  {cart.map((it) => (
-                    <li key={it.id} className="flex justify-between items-center py-3 border-b">
-                      <div>
-                        <div className="font-medium">{it.nom}</div>
-                        <div className="text-sm text-gray-500">{it.prix}</div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => onChangeQty(it.id, Math.max(1, (it.qty||1)-1))} className="w-8 h-8 flex items-center justify-center rounded-full border">−</button>
-                        <div className="w-8 text-center">{it.qty || 1}</div>
-                        <button onClick={() => onChangeQty(it.id, (it.qty||1)+1)} className="w-8 h-8 flex items-center justify-center rounded-full border">+</button>
-                        <button onClick={() => onRemove(it.id)} className="text-red-500 ml-3">Suppr</button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold">Total</span>
-                <span className="text-lg font-bold">{cart.reduce((s,it)=>s + (Number(String(it.prix).replace(/[^0-9.-]+/g, ''))||0) * (it.qty||1), 0).toLocaleString()} FC</span>
-              </div>
-              <div className="flex gap-3">
-                <button onClick={() => { onClear(); setCartOpen(false); }} className="flex-1 px-4 py-2 border rounded-lg">Vider le panier</button>
-                <button className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg">Commander</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* Seller Mini-boutique Modal */}
-      
-
-      {selectedSeller && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 w-11/12 max-w-5xl max-h-[80vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-6 mb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                  {sellerFull?.avatar ? (
-                    <img src={(sellerFull.avatar.startsWith('/uploads') ? `${BASE}${sellerFull.avatar}` : sellerFull.avatar)} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-gray-400">No photo</div>
-                  )}
-                </div>
-                <div>
-                  <div className="text-2xl font-extrabold">{sellerFull?.name || selectedSeller.name || 'Vendeur'}</div>
-                  <div className="text-sm text-gray-500 mt-1">{sellerFull?.email || '—'}</div>
-                  <div className="text-sm text-gray-500">{sellerFull?.telephone || '—'}</div>
-                  <div className="text-sm text-gray-500">{sellerFull?.ville ? `${sellerFull.ville}${sellerFull.pays ? ', ' + sellerFull.pays : ''}` : sellerFull?.pays || '—'}</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
                 <button
                   onClick={() => {
                     const contactData = sellerFull?.contact || {};
@@ -728,43 +918,72 @@ export default function Marketplace() {
                     });
                     setShowContactModal(true);
                   }}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded"
-                >Contacter</button>
-                <button onClick={() => setSelectedSeller(null)} className="px-4 py-2 text-gray-600">Fermer</button>
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors duration-200"
+                >
+                  Contacter
+                </button>
+                <button 
+                  onClick={() => setSelectedSeller(null)} 
+                  className="p-3 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
               </div>
             </div>
 
-            <h4 className="text-lg font-semibold mb-3">Produits du vendeur</h4>
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              <h4 className="text-lg font-semibold text-gray-900 mb-6">Produits du vendeur</h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sellerFull?.products && sellerFull.products.length > 0 ? (
-                sellerFull.products.map((p) => (
-                  <div key={p.id} className="border rounded-lg p-4 bg-white flex flex-col">
-                    <div className="h-40 w-full overflow-hidden rounded mb-3">
-                      <img src={resolveImageUrl(p.image)} alt={p.name} className="w-full h-full object-cover" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sellerFull?.products && sellerFull.products.length > 0 ? (
+                  sellerFull.products.map((p) => (
+                    <div key={p.id} className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-200">
+                      <div className="h-40 w-full overflow-hidden">
+                        <img 
+                          src={resolveImageUrl(p.image)} 
+                          alt={p.name} 
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                        />
+                      </div>
+                      <div className="p-4">
+                        <div className="font-semibold text-gray-900 mb-1">{p.name}</div>
+                        <div className="text-sm text-gray-500 mb-2">{p.category} • {p.city}</div>
+                        <div className="text-lg font-bold text-emerald-600 mb-2">
+                          {formatPrice(p.price)} {String(p.price || '').includes('USD') ? 'USD' : 'FC'}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{p.description}</p>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => addToCart(p, { id: sellerFull.id })} 
+                            className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors duration-200"
+                          >
+                            Ajouter
+                          </button>
+                          <button className="px-4 py-2 text-emerald-600 hover:text-emerald-700 font-medium transition-colors duration-200">
+                            Voir
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-lg">{p.name}</div>
-                      <div className="text-sm text-gray-500">{p.category} • {p.city}</div>
-                      <div className="mt-2 font-semibold">{formatPrice(p.price)} {String(p.price || '').includes('USD') ? 'USD' : 'FC'}</div>
-                      <p className="mt-2 text-sm text-gray-600">{p.description}</p>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between">
-                      <button onClick={() => addToCart(p, { id: sellerFull.id })} className="px-3 py-2 bg-emerald-600 text-white rounded">Ajouter</button>
-                      <button onClick={() => { /* optionally open product details */ }} className="text-sm text-blue-600">Voir</button>
-                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    Aucun produit trouvé pour ce vendeur.
                   </div>
-                ))
-              ) : (
-                <div className="text-gray-500 col-span-full">Aucun produit trouvé pour ce vendeur.</div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <div className="bg-emerald-600 text-white px-4 py-2 rounded shadow">{toast}</div>
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-right duration-300">
+          <div className="bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <div className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse"></div>
+            {toast}
+          </div>
         </div>
       )}
     </div>

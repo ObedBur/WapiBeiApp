@@ -7,5 +7,14 @@ export default defineConfig({
   plugins: [react()],
   css: {
     postcss: './postcss.config.js'
+  },
+  server: {
+    proxy: {
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })
