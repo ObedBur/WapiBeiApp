@@ -7,6 +7,8 @@ import productsRoutes from './routes/products.js';
 import messagesRoutes from './routes/messages.js';
 import conversationsRoutes from './routes/conversations.js';
 import usersRoutes from './routes/users.js';
+import testimonialsRoutes from './routes/testimonials.js';
+import notificationsRoutes from './routes/notifications.js';
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.use('/api/products', productsRoutes);
 app.use('/api/conversations', conversationsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/testimonials', testimonialsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

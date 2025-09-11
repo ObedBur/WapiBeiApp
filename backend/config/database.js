@@ -104,6 +104,44 @@ db.exec(`
     )
 `);
 
+// Table posts (blog articles)
+db.exec(`
+    CREATE TABLE IF NOT EXISTS posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        excerpt TEXT,
+        body TEXT,
+        cover_url TEXT,
+        author TEXT,
+        published_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+// Table favorites (user wishlist)
+db.exec(`
+    CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, product_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    )
+`);
+// Table conversations
+db.exec(`
+    CREATE TABLE IF NOT EXISTS testimonials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        avatar TEXT,
+        text TEXT,
+        location TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
 // Table conversations
 db.exec(`
     CREATE TABLE IF NOT EXISTS conversations (
@@ -127,7 +165,6 @@ db.exec(`
         FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE
     )
 `);
-
 
 // Ensure users have a boutique_json column and date_inscription set
 try {
@@ -169,7 +206,6 @@ db.exec(`
         FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
     )
 `);
-
 
 // Fournir une API compatible `pool.query` utilisée dans le code backend
 const query = (sql, params = []) => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Bell, Eye, Globe, LogOut } from '../../components/Icons';
+import { useNavigate } from 'react-router-dom';
 
 // Inline fallbacks for icons not present in Icons.jsx
 const Save = (props) => (
@@ -316,6 +317,8 @@ export default function Parametres() {
     </div>
   );
 
+  const navigate = useNavigate();
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="bg-white shadow-md rounded-2xl overflow-hidden">
@@ -330,7 +333,7 @@ export default function Parametres() {
             return (
               <button
                 key={section.id}
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => { if (section.id === 'profile') { navigate('/profil'); } else if (section.id === 'security') { navigate('/securite'); } else if (section.id === 'notifications') { navigate('/notifications'); } else if (section.id === 'privacy') { navigate('/confidentialite'); } else { setActiveSection(section.id); } }}
                 className={`flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition ${
                   activeSection === section.id ? 'bg-gray-50' : ''
                 }`}

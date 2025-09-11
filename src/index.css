@@ -7,6 +7,16 @@
     @apply bg-gray-50;
   }
 }
+/* src/styles/animations.css */
+@layer utilities {
+  .stagger-0{ animation-delay: 0ms; }
+  .stagger-1{ animation-delay: 100ms; }
+  .stagger-2{ animation-delay: 200ms; }
+  .stagger-3{ animation-delay: 300ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .feature-card, .animate-spring, .animate-spring-subtle, .animate-spring-strong { animation: none !important; transition: none !important; }
+  }
+}
 
 @layer components {
   .btn-primary {

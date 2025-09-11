@@ -86,6 +86,29 @@ const initDatabase = async () => {
       }
     }
 
+    // Create two default admin/editor users (role 'vendeur' is allowed to publish)
+    const defaultAdmins = [
+      { email: 'obedburindi@gmail.com', password: 'WapiBei@321', nom: 'Admin', prenom: 'Obed' },
+      { email: 'jadenkashongwe@gmail.com', password: 'WapiBei@321', nom: 'Admin', prenom: 'Jaden' },
+    ];
+
+    for (const adm of defaultAdmins) {
+      try {
+        const hashed = await bcrypt.hash(adm.password, 10);
+        await connection.query(
+          'INSERT INTO users (email, password, nom, prenom, role, statut) VALUES (?, ?, ?, ?, ?, ?)',
+          [adm.email, hashed, adm.nom, adm.prenom, 'vendeur', 'actif']
+        );
+        console.log(`Admin créé: ${adm.email}`);
+      } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          console.log(`Admin existe déjà: ${adm.email}`);
+        } else {
+          throw err;
+        }
+      }
+    }
+
     await connection.end();
     console.log('Initialisation terminée avec succès');
     process.exit(0);

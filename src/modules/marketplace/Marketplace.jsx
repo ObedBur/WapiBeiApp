@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, User, Star, X, Eye, Mail } from '../../components/Icons';
 import authService from '../../services/auth.service';
+import { fetchWithAuth, fetchJson } from '../../utils/api';
 
 // Small fallback icon components (emoji-based) for UI consistency when lucide-react is not installed
 const MapPin = (props) => <span {...props} aria-hidden>📍</span>;
@@ -55,10 +56,12 @@ export default function Marketplace() {
         const raw = authService.getCurrentUser();
         const id = raw?.user?.id ?? raw?.id ?? raw?.userId ?? null;
         if (!id) return setCurrentUserData(null);
-        const res = await fetch(`${BASE}/api/sellers/${id}`);
-        if (!res.ok) return setCurrentUserData(null);
-        const data = await res.json();
-        setCurrentUserData(data);
+        try {
+          const data = await fetchWithAuth(`${BASE}/api/sellers/${id}`);
+          setCurrentUserData(data);
+        } catch (e) {
+          setCurrentUserData(null);
+        }
       } catch (e) {
         setCurrentUserData(null);
       }
@@ -71,20 +74,8 @@ export default function Marketplace() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${BASE}/api/products`);
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`Bad response ${res.status}: ${txt}`);
-        }
-        const contentType = res.headers.get('content-type') || '';
-        let data;
-        if (contentType.includes('application/json')) {
-          data = await res.json();
-        } else {
-          const txt = await res.text();
-          throw new Error(`Expected JSON but got: ${txt.slice(0,200)}`);
-        }
-        if (!cancelled) setProducts(Array.isArray(data) ? data : (data.products || []));
+        const data = await fetchWithAuth(`${BASE}/api/products`);
+        if (!cancelled) setProducts(Array.isArray(data) ? data : (data.products || data.data || []));
       } catch (err) {
         console.error('Failed to load products from backend:', err);
         if (!cancelled) setProducts([]); // explicitly empty if backend not available
@@ -130,9 +121,8 @@ export default function Marketplace() {
     if (!sellerId) return null;
     if (sellersById[sellerId]) return sellersById[sellerId];
     try {
-      const res = await fetch(`${BASE}/api/sellers/${sellerId}`);
-      if (!res.ok) return null;
-      const data = await res.json();
+      const data = await fetchWithAuth(`${BASE}/api/sellers/${sellerId}`);
+      if (!data) return null;
       setSellersById(prev => ({ ...prev, [sellerId]: data }));
       return data;
     } catch (e) {

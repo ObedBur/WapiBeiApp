@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import authService from '../../services/auth.service';
+import { fetchJson, fetchWithAuth } from '../../utils/api';
 
 import {
   Globe,
   Search,
   Bell,
+  CheckCircle,
   ShoppingCart,
   Star,
   Info,
@@ -13,44 +16,25 @@ import {
   Heart,
   Eye,
   X,
+  TrendingUp,
+  Shield,
+  Truck,
+  Headphones,
+  Sparkles,
 } from '../../components/Icons';
 import heroImg from '../../assets/wapibei.png';
+import ProductModal, { BlogModal } from '../../components/ProductModal';
+import Hero from './components/Hero';
+import ProductsGrid from './components/ProductsGrid';
+import Testimonials from './components/Testimonials';
+import BlogSection from './components/BlogSection';
 
-// Small mock dataset
-const initialProducts = [
-  {
-    id: 1,
-    nom: 'Riz Jasmin Premium',
-    prix: '25 000 FC',
-    category: 'Céréales',
-    description: 'Riz jasmin de qualité supérieure, parfait pour tous vos plats.',
-    image:
-      'https://images.pexels.com/photos/723198/pexels-photo-723198.jpeg?auto=compress&cs=tinysrgb&w=800',
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    nom: 'Huile de Palme Bio',
-    prix: '18 500 FC',
-    category: 'Huiles',
-    description: 'Huile de palme 100% naturelle et bio, extraite à froid.',
-    image:
-      'https://images.pexels.com/photos/33783/olive-oil-salad-dressing-cooking-olive.jpg?auto=compress&cs=tinysrgb&w=800',
-    rating: 4.6,
-  },
-  {
-    id: 3,
-    nom: 'Tomates Fraîches',
-    prix: '8 000 FC',
-    category: 'Légumes',
-    description: 'Tomates fraîches du jour, cultivées localement.',
-    image:
-      'https://images.pexels.com/photos/533280/pexels-photo-533280.jpeg?auto=compress&cs=tinysrgb&w=800',
-    rating: 4.9,
-  },
-];
+// NOTE: initialProducts kept only as a development fallback; frontend will fetch from backend by default
+const initialProducts = [];
 
-const ProductCard = ({ produit, onAdd, onViewDetails = () => {}, onToggleFavorite = () => {}, isFavorite = false }) => (
+function ProductCard({ produit, onAdd, onViewDetails = () => {}, onToggleFavorite = () => {}, isFavorite = false, isPopular = false }) {
+  const [imgLoaded, setImgLoaded] = React.useState(false);
+  return (
   <div className="group relative bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-emerald-200">
     {/* Badges */}
     <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
@@ -62,6 +46,9 @@ const ProductCard = ({ produit, onAdd, onViewDetails = () => {}, onToggleFavorit
       )}
       {produit.isBestseller && (
         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">Best</div>
+      )}
+        {isPopular && (
+          <div className="bg-gradient-to-r from-pink-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">Populaire</div>
       )}
     </div>
 
@@ -76,7 +63,8 @@ const ProductCard = ({ produit, onAdd, onViewDetails = () => {}, onToggleFavorit
     
     {/* Image container */}
     <div className="relative overflow-hidden">
-      <img src={produit.image} alt={produit.nom} className="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700" />
+        {!imgLoaded && <div className="absolute inset-0 bg-gray-100 animate-pulse"></div>}
+        <img loading="lazy" src={produit.image} srcSet={`${produit.image} 1x`} alt={produit.nom} onLoad={() => setImgLoaded(true)} className={`w-full h-56 object-cover group-hover:scale-110 transition-transform duration-700 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500" />
       
       {/* Quick view button */}
@@ -119,6 +107,7 @@ const ProductCard = ({ produit, onAdd, onViewDetails = () => {}, onToggleFavorit
     </div>
   </div>
 );
+}
 
 // Enhanced Cart Drawer Component
 const CartDrawer = ({ open, items, onClose, onClear, onRemove, onChangeQty }) => {
@@ -147,7 +136,7 @@ const CartDrawer = ({ open, items, onClose, onClear, onRemove, onChangeQty }) =>
         {/* Items */}
         <div className="flex-1 overflow-y-auto p-6">
           {items.length === 0 ? (
-            <div className="text-center py-16">
+            <div className="text-center py-16 px-8 flex flex-col items-center justify-center">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShoppingCart className="w-12 h-12 text-gray-300" />
               </div>
@@ -254,64 +243,44 @@ function TestimonialCard({ testimonial }) {
       />
       <div className="text-lg font-semibold text-gray-800 mb-2">{testimonial.name}</div>
       <div className="text-emerald-600 text-sm mb-3">{testimonial.location}</div>
-      <p className="text-gray-600 text-base mb-2">“{testimonial.text}”</p>
+      <p className="text-gray-600 text-base mb-2">"{testimonial.text}"</p>
     </div>
   );
 }
 
-// Blog posts data
-const blogPosts = [
-  {
-    id: 1,
-    title: '10 Astuces pour Économiser sur vos Courses Alimentaires',
-    excerpt:
-      "Découvrez nos conseils d'experts pour réduire votre budget courses sans compromettre la qualité.",
-    image:
-      'https://images.pexels.com/photos/1005638/pexels-photo-1005638.jpeg?auto=compress&cs=tinysrgb&w=400',
-    author: 'Équipe WapiBei',
-    date: '15 Jan 2024',
-  },
-  {
-    id: 2,
-    title: 'Les Bienfaits des Produits Locaux Africains',
-    excerpt:
-      'Pourquoi privilégier les produits locaux ? Santé, économie et environnement au rendez-vous.',
-    image:
-      'https://images.pexels.com/photos/1435904/pexels-photo-1435904.jpeg?auto=compress&cs=tinysrgb&w=400',
-    author: 'Dr. Amina Kone',
-    date: '12 Jan 2024',
-  },
-  {
-    id: 3,
-    title: 'Guide Complet de la Conservation des Aliments',
-    excerpt:
-      'Apprenez à conserver vos aliments plus longtemps et réduisez le gaspillage alimentaire.',
-    image:
-      'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-    author: 'Chef Mamadou',
-    date: '10 Jan 2024',
-  },
-];
 
-// Simple BlogCard component
 function BlogCard({ post }) {
+  const [imgLoaded, setImgLoaded] = React.useState(false);
+  // Map common CMS fields to component props (coverImage/body/slug)
+  const imageSrc = post.coverImage || post.image || post.thumbnail || '';
+  const excerpt = post.excerpt || (post.body ? (typeof post.body === 'string' ? post.body.replace(/<[^>]+>/g, '').slice(0, 160) + (post.body.length > 160 ? '…' : '') : '') : '');
+  const slug = post.slug || post.id;
+
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
       <div className="relative overflow-hidden">
+        {!imgLoaded && <div className="absolute inset-0 bg-gray-100 animate-pulse"></div>}
         <img
-          src={post.image}
+          src={imageSrc}
+          srcSet={`${imageSrc} 1x`}
           alt={post.title}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          onLoad={() => setImgLoaded(true)}
+          className={`w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
       </div>
       <div className="p-6">
         <h3 className="font-bold text-gray-800 mb-2">{post.title}</h3>
-        <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
+        <p className="text-gray-600 mb-4 line-clamp-3">{excerpt}</p>
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            {post.author} • {post.date}
+            {post.author || 'Équipe WapiBei'} • {post.date}
           </div>
-          <button className="text-emerald-600 font-semibold flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof post.onOpen === 'function') post.onOpen(post); }}
+            className="text-emerald-600 font-semibold flex items-center gap-2"
+            aria-label={`Lire la suite de ${post.title}`}
+          >
             Lire la suite
             <ArrowRight className="w-4 h-4" />
           </button>
@@ -329,29 +298,111 @@ function Accueil() {
   const [cartOpen, setCartOpen] = React.useState(false);
   const [cartItems, setCartItems] = React.useState([]);
   const [currentTestimonial, setCurrentTestimonial] = React.useState(0);
-  const testimonials = [
-    {
-      id: 1,
-      name: 'Fatou S.',
-      avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
-      text: 'Wapibei m’a permis de trouver des produits locaux de qualité à des prix imbattables. Livraison rapide et service client au top !',
-      location: 'Dakar, Sénégal',
-    },
-    {
-      id: 2,
-      name: 'Jean-Marc K.',
-      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      text: 'J’adore la simplicité d’utilisation et la sécurité des paiements. Je recommande à tous mes amis commerçants.',
-      location: 'Abidjan, Côte d’Ivoire',
-    },
-    {
-      id: 3,
-      name: 'Aminata D.',
-      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-      text: 'Le choix de produits est impressionnant et la livraison express m’a vraiment dépannée. Merci Wapibei !',
-      location: 'Bamako, Mali',
-    },
-  ];
+  const [testimonialsData, setTestimonialsData] = React.useState([]);
+  const [isLoadingTestimonials, setIsLoadingTestimonials] = React.useState(false);
+  const [testimonialsError, setTestimonialsError] = React.useState(null);
+  const [isBlogModalOpen, setIsBlogModalOpen] = React.useState(false);
+  const [blogModalPost, setBlogModalPost] = React.useState(null);
+  const [isModalLoading, setIsModalLoading] = React.useState(false);
+  const [modalError, setModalError] = React.useState(null);
+  const [blogsData, setBlogsData] = React.useState([]);
+  const [isLoadingBlogs, setIsLoadingBlogs] = React.useState(false);
+  const [blogsError, setBlogsError] = React.useState(null);
+  const [blogsPage, setBlogsPage] = React.useState(1);
+  const [blogsPerPage] = React.useState(3);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+  const [hasMoreBlogs, setHasMoreBlogs] = React.useState(true);
+  const blogModalRef = React.useRef(null);
+  const compareModalRef = React.useRef(null);
+
+  // Compare modal accessibility: trap focus and close on Escape
+  React.useEffect(() => {
+    if (!isCompareOpen || !compareModalRef.current) return undefined;
+    const modal = compareModalRef.current;
+    const selector = 'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
+    const focusables = Array.from(modal.querySelectorAll(selector));
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const previous = document.activeElement;
+    first?.focus();
+
+    function onKey(e) {
+      if (e.key === 'Escape') { setIsCompareOpen(false); }
+      if (e.key === 'Tab' && focusables.length) {
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+        else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); try { previous?.focus && previous.focus(); } catch (e) {} };
+  }, [isCompareOpen]);
+
+  const fetchBlogsPage = async (page = 1, append = false) => {
+    const possibleBases = [import.meta.env.VITE_BLOG_API, '/api/blogs', '/api/products/blogs'].filter(Boolean);
+    const makeEndpoint = (base) => `${base}${base.includes('?') ? '&' : '?'}limit=${blogsPerPage}&page=${page}`;
+    let mounted = true;
+    if (append) setIsLoadingMore(true); else setIsLoadingBlogs(true);
+    setBlogsError(null);
+    const token = (authService.getCurrentUser && authService.getCurrentUser()?.token) || null;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    let data = null;
+    let usedBase = null;
+    for (const base of possibleBases) {
+      try {
+        const endpoint = makeEndpoint(base);
+        const fetched = await fetchWithAuth(endpoint, { headers });
+        if (!fetched) continue;
+        data = fetched;
+        usedBase = base;
+        if (data) break;
+      } catch (e) {
+        // try next
+        continue;
+      }
+    }
+
+    try {
+      if (!mounted) return;
+      if (!data) {
+        setBlogsError('Aucun endpoint CMS JSON trouvé (essayez de configurer VITE_BLOG_API)');
+        if (!append) setBlogsData([]);
+      } else {
+        // Expect an array or an object { data: [], total }
+        let items = [];
+        let total = null;
+        if (Array.isArray(data)) items = data;
+        else if (data && Array.isArray(data.data)) { items = data.data; total = data.total || null; }
+        if (append) setBlogsData((prev) => [...prev, ...items]); else setBlogsData(items.length ? items : []);
+        if (total !== null) {
+          setHasMoreBlogs((page * blogsPerPage) < total);
+        } else {
+          setHasMoreBlogs(items.length === blogsPerPage);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to process blog posts:', err);
+      setBlogsError(err.message || 'Erreur lors du traitement des articles');
+      if (!append) setBlogsData([]);
+    } finally {
+      mounted && setIsLoadingBlogs(false);
+      mounted && setIsLoadingMore(false);
+    }
+
+    return () => { mounted = false; };
+  };
+
+  // initial load
+  React.useEffect(() => {
+    setBlogsPage(1);
+    fetchBlogsPage(1, false);
+  }, []);
+
+  const loadMoreBlogs = () => {
+    const next = blogsPage + 1;
+    setBlogsPage(next);
+    fetchBlogsPage(next, true);
+  };
 
   React.useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 800);
@@ -362,7 +413,17 @@ function Accueil() {
     return () => clearTimeout(id);
   }, [searchInput]);
 
-  const products = initialProducts;
+  const [products, setProducts] = React.useState([]);
+  const [isLoadingProducts, setIsLoadingProducts] = React.useState(false);
+  const [productsError, setProductsError] = React.useState(null);
+  const [didFetchProducts, setDidFetchProducts] = React.useState(false);
+  const [productsPage, setProductsPage] = React.useState(1);
+  const [productsPerPage] = React.useState(9);
+  const [productsHasMore, setProductsHasMore] = React.useState(true);
+  const [popularityMap, setPopularityMap] = React.useState({});
+  const [favorites, setFavorites] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('favorites') || '[]'); } catch (e) { return []; }
+  });
   const filtered = products.filter((p) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
@@ -372,6 +433,180 @@ function Accueil() {
       (p.category || '').toLowerCase().includes(q)
     );
   });
+
+  const fetchProductsPage = React.useCallback(async (page = 1, append = false, q = '') => {
+    let mounted = true;
+    setIsLoadingProducts(true);
+    setProductsError(null);
+    try {
+      const BASE = import.meta.env.VITE_API_BASE || '';
+      const base = BASE ? `${BASE}/api/products` : '/api/products';
+      const url = new URL(base, location.origin);
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('limit', String(productsPerPage));
+      if (q) url.searchParams.set('q', q);
+      const data = await fetchJson(url.toString());
+      // expect { data, total } or array
+      let items = [];
+      let total = null;
+      if (Array.isArray(data)) items = data;
+      else if (data && Array.isArray(data.data)) { items = data.data; total = data.total || null; }
+
+      if (append) setProducts((prev) => [...prev, ...items]); else setProducts(items);
+      setDidFetchProducts(true);
+      if (total !== null) {
+        const maxPage = Math.ceil(total / productsPerPage);
+        setProductsHasMore(page < maxPage);
+      } else {
+        setProductsHasMore(items.length === productsPerPage);
+      }
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+      if (!mounted) return;
+      if (err.status === 401) setProductsError('Vous devez vous connecter pour voir les produits.');
+      else if (err.status === 403) setProductsError('Accès refusé.');
+      else if (err.status === 404) setProductsError('Produits non trouvés');
+      else setProductsError(err.message || 'Erreur lors du chargement des produits');
+    } finally {
+      mounted && setIsLoadingProducts(false);
+    }
+    return () => { mounted = false; };
+  }, [productsPerPage]);
+
+  // initial load / when search changes
+  React.useEffect(() => {
+    setProductsPage(1);
+    fetchProductsPage(1, false, search);
+  }, [fetchProductsPage, search]);
+
+  const loadMoreProducts = () => {
+    const next = productsPage + 1;
+    setProductsPage(next);
+    fetchProductsPage(next, true, search);
+  };
+
+  // Use aggregated popularity endpoint once products are loaded
+  React.useEffect(() => {
+    if (!didFetchProducts || !Array.isArray(products) || products.length === 0) return;
+    let mounted = true;
+    const ids = products.map((p) => p.id).filter(Boolean);
+    const BASE = import.meta.env.VITE_API_BASE || '';
+    const endpoint = (BASE ? `${BASE}/api/products/popularity?ids=${ids.join(',')}` : `/api/products/popularity?ids=${ids.join(',')}`);
+
+    (async () => {
+      try {
+        const data = await fetchJson(endpoint);
+        const map = {};
+        if (Array.isArray(data)) {
+          data.forEach((d) => {
+            const id = d.productId;
+            let isPopular = false;
+            const monthSales = d.sales && d.sales.month ? Number(d.sales.month) : 0;
+            const conv = d.conversion && d.conversion.conversionRatePercent != null ? Number(d.conversion.conversionRatePercent) : null;
+            const favs = d.favorites != null ? Number(d.favorites) : 0;
+            const reviews = d.reviews && d.reviews.count ? Number(d.reviews.count) : 0;
+            if (monthSales >= 20 || (conv !== null && conv >= 5) || favs >= 10 || reviews >= 20) isPopular = true;
+            map[id] = { data: d, isPopular };
+          });
+        }
+        if (mounted) setPopularityMap(map);
+      } catch (e) {
+        console.error('Failed fetching aggregated popularity:', e);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [didFetchProducts, products]);
+
+  // Persist favorites to localStorage and sync to server if authenticated
+  React.useEffect(() => {
+    try { localStorage.setItem('favorites', JSON.stringify(favorites)); } catch (e) {}
+  }, [favorites]);
+
+  const syncFavoritesToServer = async (favList) => {
+    try {
+      const u = authService.getCurrentUser && authService.getCurrentUser();
+      const token = u?.token;
+      if (!u || !token) return;
+      await fetchJson(`${import.meta.env.VITE_API_BASE || ''}/api/users/me/favorites`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ favorites: favList }) });
+    } catch (e) {
+      console.error('Failed to sync favorites to server', e);
+    }
+  };
+
+  // on login: load server favorites and merge
+  React.useEffect(() => {
+    const u = authService.getCurrentUser && authService.getCurrentUser();
+    const token = u?.token;
+    if (!u || !token) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await fetchJson(`${import.meta.env.VITE_API_BASE || ''}/api/users/me/favorites`, { headers: { Authorization: `Bearer ${token}` } });
+        if (data && Array.isArray(data.favorites)) {
+          // merge server favorites with local
+          const merged = Array.from(new Set([...(favorites || []), ...data.favorites]));
+          setFavorites(merged);
+          // persist merged back to server
+          await syncFavoritesToServer(merged);
+        }
+      } catch (e) {
+        console.warn('Could not load user favorites:', e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const toggleFavorite = (productId) => {
+    setFavorites((prev) => {
+      const exists = prev.includes(productId);
+      const next = exists ? prev.filter((p) => p !== productId) : [...prev, productId];
+      // try sync in background
+      syncFavoritesToServer(next);
+      return next;
+    });
+  };
+
+  // fetch testimonials with retry support
+  const fetchTestimonials = React.useCallback(async () => {
+    let mounted = true;
+    try {
+      setIsLoadingTestimonials(true);
+      setTestimonialsError(null);
+      const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      try {
+        const data = await fetchJson(`${BASE}/api/testimonials`);
+        setTestimonialsData(Array.isArray(data) ? data : []);
+      } catch (e) {
+        throw e;
+      }
+    } catch (e) {
+      console.error('Failed loading testimonials', e);
+      setTestimonialsError(e.message || 'Erreur chargement témoignages');
+      setTestimonialsData([]);
+    } finally {
+      mounted && setIsLoadingTestimonials(false);
+    }
+    return () => { mounted = false; };
+  }, []);
+
+  React.useEffect(() => {
+    const cancel = fetchTestimonials();
+    return () => { if (typeof cancel === 'function') cancel(); };
+  }, [fetchTestimonials]);
+
+  const [selectedProduct, setSelectedProduct] = React.useState(null);
+  const [isProductModalOpen, setIsProductModalOpen] = React.useState(false);
+
+  const openProductModal = (produit) => {
+    setSelectedProduct(produit);
+    setIsProductModalOpen(true);
+  };
+
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    setIsProductModalOpen(false);
+  };
 
   const addToCart = (produit) => {
     setCartItems((prev) => {
@@ -383,500 +618,70 @@ function Accueil() {
     setCartOpen(true);
   };
 
+  const handleOpenBlogModal = (post) => {
+    const slug = post.slug || post.id;
+    setBlogModalPost({ ...post, slug });
+    setIsBlogModalOpen(true);
+  };
+
   return (
     <div className="w-full bg-gray-50 ">
+      <style>{`@keyframes spring { 0% { transform: translateY(0) scale(1); } 25% { transform: translateY(-8px) scale(1.02); } 55% { transform: translateY(-3px) scale(1.01); } 85% { transform: translateY(-1px) scale(1.005); } 100% { transform: translateY(0) scale(1); } } @keyframes spring-subtle { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-4px) scale(1.01); } 70% { transform: translateY(-1px) scale(1.003); } 100% { transform: translateY(0) scale(1); } } @keyframes spring-strong { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-12px) scale(1.08); } 60% { transform: translateY(-4px) scale(1.03); } 100% { transform: translateY(0) scale(1); } } .feature-card { transition: transform 420ms cubic-bezier(.22,.9,.3,1), box-shadow 300ms cubic-bezier(.22,.9,.3,1); will-change: transform; } .feature-card:hover { animation: spring 1000ms cubic-bezier(.25,.9,.35,1) both; } .feature-card--subtle:hover { animation: spring-subtle 1000ms cubic-bezier(.25,.9,.35,1) both; } .feature-card--strong:hover { animation: spring-strong 1000ms cubic-bezier(.25,.9,.35,1) both; } .stagger-0{animation-delay:0ms} .stagger-1{animation-delay:100ms} .stagger-2{animation-delay:200ms} .stagger-3{animation-delay:300ms}`}</style>
       <main className="w-full pb-16">
-      <section className="relative pt-24">
-        <div className="w-full bg-gradient-to-r from-green-600 to-emerald-500">
-          <div className="max-w-7xl mx-auto px-6 py-16 lg:py-28">
-            <div className="relative rounded-2xl text-white p-8 lg:p-12 shadow-2xl overflow-hidden">
-              {/* floating decorative icons */}
-              <div className="absolute left-8 top-8 w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center shadow-lg">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-yellow-300"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="absolute right-12 top-20 w-10 h-10 bg-white/5 rounded-full flex items-center justify-center shadow-lg">
-                <svg
-                  className="w-5 h-5 text-yellow-300"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 17l-5 3 1-6-4-4 6-1 3-6 1 6 6 1-4 4 1 6z" />
-                </svg>
-              </div>
-
-              <div className="mx-auto text-center max-w-3xl">
-                <div className="inline-block bg-white/10 text-white/90 rounded-full px-4 py-1 mb-6">
-                  <span className="text-sm">🔥 Offres limitées jusqu'à -50%</span>
-                </div>
-                <h1 className="text-4xl md:text-6xl font-extrabold leading-tight text-white">
-                  <span className="block">Comparez, publiez et</span>
-                  <span className="block text-yellow-300">économisez</span>
-                  <span className="block text-green-100 mt-2">partout en Afrique</span>
-                </h1>
-                <p className="mt-6 text-lg text-green-100/90">
-                  Découvrez les meilleurs produits alimentaires aux meilleurs prix.{' '}
-                  <span className="font-semibold text-yellow-200">Plus de 10,000 produits</span>{' '}
-                  disponibles avec{' '}
-                  <span className="font-semibold text-yellow-200">livraison gratuite</span> dans
-                  toute l'Afrique.
-                </p>
-
-                {/* search */}
-                <div className="mt-10 relative">
-                  <div className="mx-auto max-w-2xl">
-                    <div className="relative bg-white rounded-full shadow-lg px-4 py-3 flex items-center">
-                      <Search className="w-5 h-5 text-gray-400 mr-3" />
-                      <input
-                        aria-label="Rechercher des produits"
-                        value={searchInput}
-                        onChange={(e) => setSearchInput(e.target.value)}
-                        placeholder="Rechercher un produit (ex: Riz, Huile, Tomates...)"
-                        className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-400"
-                      />
-                      <button
-                        className="ml-4 bg-emerald-600 text-white px-5 py-2 rounded-full font-medium shadow-md"
-                        onClick={() => setSearch(searchInput)}
-                      >
-                        Rechercher
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTAs */}
-                <div className="mt-8 flex justify-center gap-6">
-                  <button className="bg-white rounded-xl px-6 py-3 shadow-md flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5 text-emerald-600"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-emerald-800">Publier un prix</div>
-                      <div className="text-sm text-gray-500">Gagnez des points</div>
-                    </div>
-                  </button>
-
-                  <button onClick={() => setIsCompareOpen(true)} className="border border-white/40 rounded-xl px-6 py-3 flex items-center gap-3 text-white">
-                    <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18" /></svg>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold">Comparer les prix</div>
-                      <div className="text-sm text-gray-200/80">Économisez plus</div>
-                    </div>
-                  </button>
-        </div>
-
-                {/* benefits */}
-                <div className="mt-12 flex items-center justify-center gap-8 text-sm text-green-50/90">
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M5 13l4 4L19 7" />
-                    </svg>{' '}
-                    Livraison gratuite
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M3 10h18v10H3z" />
-                    </svg>{' '}
-                    Paiement sécurisé
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 2l2 5h5l-4 3 1 5-4-3-4 3 1-5-4-3h5z" />
-                    </svg>{' '}
-                    Qualité garantie
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M12 8v4l3 3" />
-                    </svg>{' '}
-                    Support 24/7
-                  </div>
-              </div>
-              </div>
-
-              {/* floating gift */}
-              <div className="absolute right-10 bottom-6 w-14 h-14 bg-white/6 rounded-xl flex items-center justify-center shadow-lg">
-                <svg
-                  className="w-6 h-6 text-pink-300"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2v-7" />
-                </svg>
-            </div>
-          </div>
-          </div>
-          </div>
-      </section>
-        <section className="bg-gradient-to-r from-green-50 via-white to-green-50 py-16">
+        <Hero searchInput={searchInput} setSearchInput={setSearchInput} onSearch={() => setSearch(searchInput)} setIsCompareOpen={setIsCompareOpen} />
           <div className="max-w-7xl mx-auto px-6">
             <div className="bg-white rounded-3xl shadow-xl p-10">
-              <div className="flex flex-col items-center text-center mb-8">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-50 mb-4 shadow-md">
-                  <svg
-                    className="w-8 h-8 text-emerald-500"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2l2.09 6.26L20 9.27l-5 3.64L16.18 21 12 17.27 7.82 21 9 12.91l-5-3.64 5.91-.91z" />
-                  </svg>
-                </div>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-emerald-800 mb-3">
-                  Une expérience d'achat révolutionnaire
-                </h2>
-                <p className="text-gray-600 max-w-3xl leading-relaxed">
-                  Découvrez une plateforme complète qui transforme votre façon d'acheter avec des
-                  fonctionnalités innovantes et un service exceptionnel.
-                </p>
-              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-                {/* Comparaison intelligente */}
-                <div className="border border-emerald-100 rounded-2xl bg-white p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition transform hover:-translate-y-1">
-                  <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-                    <svg
-                      className="w-7 h-7 text-emerald-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M9 17v-2a4 4 0 014-4h6M9 7V5a4 4 0 014-4h6" />
-                      <circle cx="7" cy="17" r="3" />
-                      <circle cx="17" cy="7" r="3" />
-                    </svg>
+                <div className="group text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-emerald-200 transform hover:-translate-y-2">
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <TrendingUp className="w-10 h-10 text-emerald-600" />
                   </div>
-                  <div className="font-semibold text-emerald-800 mb-2">
-                    Comparaison intelligente
-                  </div>
-                  <div className="text-gray-600 text-sm leading-relaxed">
-                    Comparez les prix en temps réel avec notre IA pour économiser jusqu'à{' '}
-                    <span className="font-bold text-emerald-600">40%</span> sur vos achats
-                  </div>
-                </div>
-                {/* Sécurité maximale */}
-                <div className="border border-emerald-100 rounded-2xl bg-white p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition transform hover:-translate-y-1">
-                  <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-                    <svg
-                      className="w-7 h-7 text-emerald-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      viewBox="0 0 24 24"
-                    >
-                      <rect x="3" y="11" width="18" height="10" rx="2" />
-                      <path d="M7 11V7a5 5 0 0110 0v4" />
-                      <circle cx="12" cy="16" r="1.5" />
-                    </svg>
-                  </div>
-                  <div className="font-semibold text-emerald-800 mb-2">Sécurité maximale</div>
-                  <div className="text-gray-600 text-sm leading-relaxed">
-                    Transactions cryptées et protection des données avec certification SSL et
-                    conformité RGPD
-                  </div>
-                </div>
-                {/* Livraison express */}
-                <div className="border border-emerald-100 rounded-2xl bg-white p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition transform hover:-translate-y-1">
-                  <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-                    <svg
-                      className="w-7 h-7 text-emerald-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      viewBox="0 0 24 24"
-                    >
-                      <rect x="1" y="7" width="15" height="13" rx="2" />
-                      <path d="M16 10h2.5a2 2 0 011.98 1.75l.5 4A2 2 0 0119 18H17" />
-                      <circle cx="5.5" cy="19.5" r="1.5" />
-                      <circle cx="18.5" cy="19.5" r="1.5" />
-                      <path d="M7 10v2h5" />
-                    </svg>
-                  </div>
-                  <div className="font-semibold text-emerald-800 mb-2">Livraison express</div>
-                  <div className="text-gray-600 text-sm leading-relaxed">
-                    Livraison dans toute l'Afrique en 24-48h avec suivi GPS en temps réel
-                  </div>
-                </div>
-                {/* Support premium */}
-                <div className="border border-emerald-100 rounded-2xl bg-white p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition transform hover:-translate-y-1">
-                  <div className="w-14 h-14 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-                    <svg
-                      className="w-7 h-7 text-emerald-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M8 15c1.333 1 2.667 1 4 0" />
-                      <path d="M9 9h.01M15 9h.01" />
-                    </svg>
-                  </div>
-                  <div className="font-semibold text-emerald-800 mb-2">Support premium</div>
-                  <div className="text-gray-600 text-sm leading-relaxed">
-                    Assistance personnalisée 24/7 par chat, téléphone et WhatsApp dans votre langue
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">
-              Découvrez nos produits populaires <span className="text-emerald-600">en direct</span>
-            </h2>
-            <div className="text-sm text-gray-600">
-              {filtered.length} produit{filtered.length !== 1 ? 's' : ''}
-            </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Comparaison intelligente</h3>
+                  <p className="text-gray-600 leading-relaxed">Comparez les prix en temps réel avec notre IA pour économiser jusqu'à 40% sur vos achats</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="animate-pulse bg-white p-4 rounded-lg shadow"
-                    style={{ height: 240 }}
-                  />
-                ))
-              : filtered.map((p) => <ProductCard key={p.id} produit={p} onAdd={addToCart} />)}
+                <div className="group text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-blue-200 transform hover:-translate-y-2">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <Shield className="w-10 h-10 text-blue-600" />
           </div>
-        </section>
-
-        <section className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                <MessageCircle className="w-4 h-4" />
-                Témoignages clients
-              </div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-6">Ce que disent nos clients</h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Plus de 10,000 clients nous font confiance pour leurs achats quotidiens
-              </p>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Sécurité maximale</h3>
+                  <p className="text-gray-600 leading-relaxed">Transactions cryptées et protection des données avec certification SSL et conformité RGPD</p>
             </div>
 
-            {/* Testimonials Carousel */}
-            <div className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {testimonials.map((testimonial, index) => (
-                  <div
-                    key={testimonial.id}
-                    className={`transition-all duration-500 ${
-                      index === currentTestimonial ? 'scale-105 z-10' : 'scale-95 opacity-75'
-                    }`}
-                  >
-                    <TestimonialCard testimonial={testimonial} />
+                <div className="group text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-purple-200 transform hover:-translate-y-2">
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <Truck className="w-10 h-10 text-purple-600" />
                   </div>
-                ))}
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Livraison express</h3>
+                  <p className="text-gray-600 leading-relaxed">Livraison dans toute l'Afrique en 24-48h avec suivi GPS en temps réel</p>
               </div>
 
-              {/* Navigation dots */}
-              <div className="flex justify-center gap-2 mt-8">
-                {testimonials.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentTestimonial(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentTestimonial ? 'bg-emerald-600 w-8' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
+                <div className="group text-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-yellow-200 transform hover:-translate-y-2">
+                  <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <Headphones className="w-10 h-10 text-yellow-600" />
+              </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Support premium</h3>
+                  <p className="text-gray-600 leading-relaxed">Assistance personnalisée 24/7 par chat, téléphone et WhatsApp dans votre langue</p>
+            </div>
+          </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Blog Section */}
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                <Info className="w-4 h-4" />
-                Blog & Conseils
-              </div>
-              <h2 className="text-4xl font-bold text-gray-800 mb-6">Conseils et actualités</h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Découvrez nos articles pour optimiser vos achats et découvrir les tendances
-                alimentaires
-              </p>
+        <div className="max-w-7xl mx-auto px-6">
+          <ProductsGrid products={products} isLoading={isLoadingProducts} error={productsError} onRetry={() => fetchProductsPage(1, false, search)} onAddToCart={addToCart} onViewDetails={openProductModal} onToggleFavorite={toggleFavorite} favorites={favorites} isLoadingMore={isLoadingProducts} hasMore={productsHasMore} onLoadMore={loadMoreProducts} popularityMap={popularityMap} />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {blogPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
-              ))}
+        <div className="max-w-7xl mx-auto px-6 mt-12">
+          <Testimonials data={testimonialsData} loading={isLoadingTestimonials} error={testimonialsError} onRetry={fetchTestimonials} currentIndex={currentTestimonial} onSetIndex={setCurrentTestimonial} />
             </div>
-
-            <div className="text-center mt-12">
-              <button className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center gap-3 mx-auto">
-                Voir tous les articles
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Enhanced CTA Section */}
-        <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white relative overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
-            <div className="absolute bottom-10 right-10 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-2000"></div>
-          </div>
-
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-                  <span className="w-4 h-4">🎯</span>
-                  Rejoignez-nous maintenant
-                </div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                  Prêt à révolutionner <span className="block text-emerald-400">vos achats ?</span>
-                </h2>
-                <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-                  Rejoignez plus de 10,000 utilisateurs qui économisent déjà avec WapiBei. Commencez
-                  dès aujourd'hui et découvrez une nouvelle façon d'acheter.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="group bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-2xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all duration-300 flex items-center justify-center gap-3 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1">
-                    <span className="w-6 h-6">🏆</span>
-                    <div className="text-left">
-                      <div>Devenir vendeur</div>
-                      <div className="text-sm text-emerald-200">Commission 0% le 1er mois</div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-
-                  <button className="group border-2 border-white text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-gray-900 transition-all duration-300 flex items-center justify-center gap-3 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1">
-                    <span className="w-6 h-6">👥</span>
-                    <div className="text-left">
-                      <div>Créer un compte</div>
-                      <div className="text-sm opacity-80">Gratuit à vie</div>
-                    </div>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-4">
-                    <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl">
-                      <div className="w-8 h-8 text-emerald-400 mb-3">📊</div>
-                      <h3 className="font-bold mb-2">Économies moyennes</h3>
-                      <p className="text-2xl font-bold text-emerald-400">35%</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl">
-                      <div className="w-8 h-8 text-blue-400 mb-3">👥</div>
-                      <h3 className="font-bold mb-2">Utilisateurs actifs</h3>
-                      <p className="text-2xl font-bold text-blue-400">10K+</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4 mt-8">
-                    <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl">
-                      <div className="w-8 h-8 text-purple-400 mb-3">📈</div>
-                      <h3 className="font-bold mb-2">Satisfaction client</h3>
-                      <p className="text-2xl font-bold text-purple-400">98%</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl">
-                      <div className="w-8 h-8 text-yellow-400 mb-3">⚡</div>
-                      <h3 className="font-bold mb-2">Commandes/jour</h3>
-                      <p className="text-2xl font-bold text-yellow-400">500+</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Newsletter Section */}
-        <section className="py-20 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 text-white relative overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse animation-delay-2000" />
-          </div>
-          <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
-              <Mail className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-4xl font-bold mb-6">Restez informé des meilleures offres</h2>
-            <p className="text-xl text-emerald-100 mb-8 max-w-2xl mx-auto">
-              Recevez chaque semaine nos offres exclusives, nouveaux produits et conseils d'experts
-              directement dans votre boîte mail.
-            </p>
-
-            <div className="max-w-md mx-auto">
-              <div className="flex gap-4">
-                <input
-                  type="email"
-                  placeholder="Votre adresse email"
-                  className="flex-1 px-6 py-4 rounded-2xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-white/20"
-                />
-                <button className="bg-white text-emerald-600 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-colors shadow-lg">
-                  S'abonner
-                </button>
-              </div>
-              <p className="text-sm text-emerald-200 mt-4">Pas de spam, désabonnement en un clic</p>
-            </div>
-          </div>
-        </section>
+        <BlogSection posts={blogsData} onOpenPost={(p) => handleOpenBlogModal(p)} isModalOpen={isBlogModalOpen} modalPost={blogModalPost} isModalLoading={isModalLoading} modalError={modalError} BlogModalComponent={BlogModal} />
+        {/* Product modal */}
+        {isProductModalOpen && selectedProduct && (
+          <ProductModal product={selectedProduct} onClose={closeProductModal} onAdd={(p) => { addToCart(p); closeProductModal(); }} />
+        )}
       </main>
 
       {/* Price comparison modal */}
       {isCompareOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
+  <div ref={compareModalRef} className="fixed inset-0 z-50 flex items-center justify-center">
     {/* Overlay avec blur */}
     <div
       className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -884,10 +689,10 @@ function Accueil() {
     />
 
     {/* Contenu modale */}
-    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-6 z-10 animate-scale-in">
+    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 p-6 z-10 animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 border-b pb-3">
-        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <h3 id="compare-modal-title" className="text-xl font-bold text-gray-800 flex items-center gap-2">
           🔍 Comparer les prix
         </h3>
         <button
@@ -1026,7 +831,7 @@ function Accueil() {
 )}
 
 
-      <CartDrawer open={cartOpen} items={cartItems} onClose={() => setCartOpen(false)} />
+      <CartDrawer open={cartOpen} items={cartItems} onClose={() => setCartOpen(false)} onRemove={(id)=> setCartItems(prev=> prev.filter(i=>i.id!==id))} onChangeQty={(id, qty)=> setCartItems(prev=> prev.map(it=> it.id===id ? {...it, qty} : it))} onClear={()=> setCartItems([])} />
     </div>
   );
 }

@@ -109,10 +109,53 @@ export const Globe = (props) => (
     <path d="M2.05 12H21.95M12 2.05v19.9M16.95 6.95C15.4 8.5 12.9 9.5 12 9.5s-3.4-1-4.95-2.55M16.95 17.05C15.4 15.5 12.9 14.5 12 14.5s-3.4 1-4.95 2.55" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+export const CheckCircle = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// New icons added to support Accueil feature cards
+export const TrendingUp = (props) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M3 17l6-6 4 4 8-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M21 7v6h-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const Shield = (props) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M12 2l7 3v5c0 5-3.8 9.7-7 11-3.2-1.3-7-6-7-11V5l7-3z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9.5 12.5l2 2 4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const Truck = (props) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M1 3h13v13H1z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M14 8h6l3 3v5h-9V8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="7" cy="19" r="1" fill="currentColor" />
+    <circle cx="20" cy="19" r="1" fill="currentColor" />
+  </svg>
+);
+
+export const Headphones = (props) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M4 15v-1a8 8 0 0116 0v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="3" y="15" width="4" height="6" rx="2" stroke="currentColor" strokeWidth="1.2" />
+    <rect x="17" y="15" width="4" height="6" rx="2" stroke="currentColor" strokeWidth="1.2" />
+  </svg>
+);
+
+export const Sparkles = (props) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M12 2l1.5 3 3 1.5-3 1.5L12 12l-1.5-3-3-1.5 3-1.5L12 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 export default {
   ShoppingCart, Search, Filter, Star, ArrowRight, Info, Mail, Heart, Eye, X
-  , User, Bell, Lock, HelpCircle, LogOut, Globe
+  , User, Bell, Lock, HelpCircle, LogOut, Globe , CheckCircle, TrendingUp, Shield, Truck, Headphones, Sparkles
 };
 
 

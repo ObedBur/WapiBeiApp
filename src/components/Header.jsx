@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/auth.service';
-import Messagerie from '../modules/messagerie/Messagerie';
 import { User, ShoppingCart, Mail } from './Icons';
+
+const Messagerie = React.lazy(() => import('../modules/messagerie/Messagerie'));
 
 export default function Header() {
   const navigate = useNavigate();
@@ -56,8 +57,6 @@ export default function Header() {
             <nav className="hidden md:flex items-center space-x-8">
               <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Accueil</Link>
               <Link to="/marketplace" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Marketplace</Link>
-              <Link to={profileLink} className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Profil</Link>
-              <button onClick={() => setShowMessagerie(true)} className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium" aria-haspopup="dialog">Messagerie</button>
             </nav>
           </div>
 
@@ -103,10 +102,14 @@ export default function Header() {
             <button onClick={() => setShowMessagerie(false)} className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg bg-white border border-gray-200" aria-label="Fermer la messagerie">✖</button>
           </div>
           <div className="h-full">
-            <Messagerie />
+            <React.Suspense fallback={<div className="p-6">Chargement de la messagerie...</div>}>
+              <Messagerie />
+            </React.Suspense>
           </div>
         </div>
       )}
+
+      
     </header>
   );
 }

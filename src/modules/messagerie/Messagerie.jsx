@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
 import authService from '../../services/auth.service';
+import { fetchWithAuth, postJson } from '../../utils/api';
 
 // Hook pour les toasts
 const useToast = () => {
@@ -243,11 +244,12 @@ export default function Messagerie() {
     if (usersById[userId]) return usersById[userId];
     try {
       const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
-      const res = await fetch(`${apiBase}/api/sellers/${userId}`);
-      if (!res.ok) return null;
-      const data = await res.json();
-      setUsersById(prev => ({ ...prev, [userId]: data }));
-      return data;
+      try {
+        const data = await fetchWithAuth(`${apiBase}/api/sellers/${userId}`);
+        if (!data) return null;
+        setUsersById(prev => ({ ...prev, [userId]: data }));
+        return data;
+      } catch (e) { return null; }
     } catch (e) {
       return null;
     }
@@ -404,17 +406,7 @@ export default function Messagerie() {
     setConversationsLoading(true);
     
     try {
-      const res = await fetch(`${BASE}/api/conversations`, { headers: buildHeaders() });
-      if (!res.ok) {
-        if (res.status === 401) {
-          setConversations([]);
-          setLoadError('Non autorisé — connectez-vous');
-          showToast('Session expirée, veuillez vous reconnecter', 'warning');
-          return;
-        }
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data = await res.json();
+      const data = await fetchWithAuth(`${BASE}/api/conversations`);
       const convs = Array.isArray(data) ? data : [];
       setConversations(convs);
       setFilteredConversations(convs);
@@ -425,22 +417,17 @@ export default function Messagerie() {
       }
       showToast('Conversations chargées', 'success');
     } catch (err) {
-      console.error("Erreur chargement conversations:", err);
-      setConversations([]);
-      setLoadError('Erreur chargement conversations');
-      
-      // Retry automatique avec backoff exponentiel
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000;
-        showToast(`Nouvelle tentative dans ${delay/1000}s...`, 'warning');
-        setTimeout(() => loadConversations(retryCount + 1), delay);
-      } else {
-        showToast('Impossible de charger les conversations', 'error');
+      if (err.status === 401) {
+        setConversations([]);
+        setLoadError('Non autorisé — connectez-vous');
+        showToast('Session expirée, veuillez vous reconnecter', 'warning');
+        return;
       }
+      throw err;
     } finally {
       setConversationsLoading(false);
     }
-  }, [BASE, buildHeaders, showToast]);
+  }, [BASE, showToast]);
   
   useEffect(() => {
     if (token) loadConversations();
@@ -490,22 +477,15 @@ export default function Messagerie() {
     }
     setSearchLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/users?query=${encodeURIComponent(q)}`, { headers: buildHeaders() });
-      if (!res.ok) {
-        setUserResults([]);
-        showToast('Erreur lors de la recherche', 'error');
-        return;
-      }
-        const data = await res.json();
+      const data = await fetchWithAuth(`${BASE}/api/users?query=${encodeURIComponent(q)}`);
       setUserResults(Array.isArray(data) ? data : []);
-      } catch (err) {
-      console.error('User search error', err);
+    } catch (err) {
       setUserResults([]);
-      showToast('Erreur de connexion', 'error');
+      showToast('Erreur lors de la recherche', 'error');
     } finally {
       setSearchLoading(false);
     }
-  }, [BASE, buildHeaders, showToast]);
+  }, [BASE, showToast]);
   
   // Start conversation
   const startConversation = useCallback(async () => {
@@ -516,13 +496,7 @@ export default function Messagerie() {
     }
     
     try {
-      const res = await fetch(`${BASE}/api/conversations`, {
-        method: 'POST',
-        headers: buildHeaders(),
-        body: JSON.stringify({ partner_id: Number(partner), title: newTitle || null }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const conv = await res.json();
+      const conv = await postJson(`${BASE}/api/conversations`, { partner_id: Number(partner), title: newTitle || null });
       
       const display = selectedUser?.name || `${selectedUser?.nom || ''} ${selectedUser?.prenom || ''}`.trim() || selectedUser?.email || null;
       const enriched = { ...conv, partnerName: display };
@@ -544,7 +518,7 @@ export default function Messagerie() {
       console.error('Error creating conversation', e);
       showToast('Impossible de démarrer la conversation', 'error');
     }
-  }, [selectedUser, newTitle, BASE, buildHeaders, showToast, isMobile]);
+  }, [selectedUser, newTitle, BASE, showToast, isMobile]);
   
   // Scroll helper
   const scrollToBottom = useCallback((behavior = "smooth") => {
@@ -574,28 +548,21 @@ export default function Messagerie() {
     }
     
     try {
-      const res = await fetch(`${BASE}/api/messages/${convId}`, { headers: buildHeaders() });
-      if (!res.ok) {
-        if (res.status === 401) {
-          setMessages([]);
-          setLoadError('Non autorisé — connectez-vous');
-          showToast('Session expirée', 'warning');
-          return;
-        }
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data = await res.json();
+      const data = await fetchWithAuth(`${BASE}/api/messages/${convId}`);
       setMessages(Array.isArray(data) ? data : []);
       setTimeout(() => scrollToBottom("auto"), 50);
     } catch (err) {
-      console.error("Erreur chargement messages:", err);
-      setMessages([]);
-      setLoadError('Erreur chargement messages');
-      showToast('Impossible de charger les messages', 'error');
+      if (err.status === 401) {
+        setMessages([]);
+        setLoadError('Non autorisé — connectez-vous');
+        showToast('Session expirée', 'warning');
+        return;
+      }
+      throw err;
     } finally {
       setLoading(false);
     }
-  }, [BASE, buildHeaders, showToast, scrollToBottom, isMobile]);
+  }, [BASE, showToast, scrollToBottom, isMobile]);
   
   // Send message avec retry
   const sendMessage = useCallback(async (retryCount = 0) => {
@@ -628,24 +595,7 @@ export default function Messagerie() {
     setTimeout(() => scrollToBottom("smooth"), 50);
 
     try {
-      const res = await fetch(`${BASE}/api/messages`, {
-        method: "POST",
-        headers: buildHeaders(),
-        body: JSON.stringify({
-          conversationId: selectedConv,
-          senderId: currentUserId,
-          content: optimistic.content,
-          createdAt: optimistic.createdAt,
-          replyTo: replyToId,
-        }),
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) throw new Error('Non autorisé');
-        throw new Error(`Erreur envoi message: ${res.status}`);
-      }
-
-      const saved = await res.json();
+      const saved = await postJson(`${BASE}/api/messages`, { conversationId: selectedConv, senderId: currentUserId, content: optimistic.content, createdAt: optimistic.createdAt, replyTo: replyToId });
       setMessages(prev => prev.map(m => m.id === tmpId ? saved : m));
       showToast('Message envoyé', 'success');
       setTimeout(() => scrollToBottom("smooth"), 50);
@@ -669,7 +619,7 @@ export default function Messagerie() {
     } finally {
       setIsSending(false);
     }
-  }, [newMessage, selectedConv, currentUserId, isSending, BASE, buildHeaders, showToast, scrollToBottom, replyToMessage]);
+  }, [newMessage, selectedConv, currentUserId, isSending, BASE, showToast, scrollToBottom, replyToMessage]);
   
   // Auto-scroll when messages change
   useEffect(() => {
@@ -879,15 +829,13 @@ export default function Messagerie() {
                                 const emoji = prompt('Entrez un emoji à ajouter (ex: 👍 ❤️)');
                                 if (!emoji) return;
                                 try {
-                                  const res = await fetch(`${BASE}/api/messages/${m.id}/reactions`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify({ emoji, action: 'add' }) });
-                                  if (!res.ok) throw new Error('reaction failed');
-                                  const rres = await fetch(`${BASE}/api/messages/${m.id}/reactions`, { headers: buildHeaders() });
-                                  if (rres.ok) {
-                                    const data = await rres.json();
+                                  try {
+                                    await postJson(`${BASE}/api/messages/${m.id}/reactions`, { emoji, action: 'add' });
+                                    const data = await fetchWithAuth(`${BASE}/api/messages/${m.id}/reactions`);
                                     const map = {};
                                     (data || []).forEach(d => map[d.emoji] = d.count);
                                     setMessages(prev => prev.map(mm => mm.id === m.id ? { ...mm, reactions: map } : mm));
-                                  }
+                                  } catch (e) { console.error('Reaction error', e); }
                                 } catch (e) { console.error('Reaction error', e); }
                               }} className="text-xs text-gray-500 hover:text-gray-700">Réagir</button>
                             </div>

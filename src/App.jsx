@@ -12,6 +12,13 @@ import ProfilVendeur from './modules/marketplace/ProfilVendeur';
 import PublicationPrix from './modules/produits/PublicationPrix';
 import ComparaisonPrix from './modules/produits/ComparaisonPrix';
 import authService from './services/auth.service';
+import BlogDetail from './modules/produits/BlogDetail';
+import AdminBlogEditor from './pages/AdminBlogEditor';
+import Profil from './modules/utilisateur/profil';
+import Securite from './modules/utilisateur/securite';
+import Notification from './modules/utilisateur/Notification';
+import Confidentialite from './modules/utilisateur/Confidentialite';
+import AdminDashboard from './pages/AdminDashboard';
 
 function PublishGuard() {
   const user = authService.getCurrentUser();
@@ -36,7 +43,16 @@ export default function App() {
           <Route path="/marketplace" element={<div className="container mx-auto px-4 py-8"><Marketplace /></div>} />
           <Route path="/vendeur/:id" element={<div className="container mx-auto px-4 py-8"><ProfilVendeur /></div>} />
           <Route path="/publier" element={<div className="container mx-auto px-4 py-8"><PublishGuard /></div>} />
-          <Route Path="/ProductModal" element={<div className="container mx-auto px-4 py-8"><ProductModal/></div>} />
+          <Route path="/ProductModal" element={<div className="container mx-auto px-4 py-8"><ProductModal/></div>} />
+          <Route path="/blog/:slug" element={<div className="container mx-auto px-4 py-8"><BlogDetail /></div>} />
+          <Route path="/profil" element={<div className="container mx-auto px-4 py-8"><Profil /></div>} />
+          <Route path="/securite" element={<div className="container mx-auto px-4 py-8"><Securite /></div>} />
+          <Route path="/notifications" element={<div className="container mx-auto px-4 py-8"><Notification /></div>} />
+          <Route path="/confidentialite" element={<div className="container mx-auto px-4 py-8"><Confidentialite /></div>} />
+          <Route path="/admin/blogs/new" element={<div className="container mx-auto px-4 py-8"><AdminBlogEditor/></div>} />
+          <Route path="/admin" element={<div className="container mx-auto px-4 py-8"><AdminDashboard /></div>} />
+          <Route path="/login" element={<div className="container mx-auto px-4 py-8"><Connexion /></div>} />
+
         </Routes>
       </main>
       <Footer />

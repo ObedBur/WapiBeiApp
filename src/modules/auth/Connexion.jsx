@@ -26,8 +26,14 @@ export default function Connexion() {
     
     try {
       const response = await authService.login(formData);
-      // Redirection vers la page d'accueil après connexion réussie
-      navigate('/');
+      // If user is admin/editor redirect to admin dashboard
+      const role = response?.user?.role || response?.role || null;
+      if (role === 'admin' || role === 'vendeur') {
+        navigate('/admin');
+      } else {
+        // Redirection vers la page d'accueil après connexion réussie
+        navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors de la connexion. Veuillez réessayer.');
     } finally {
