@@ -49,4 +49,28 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/conversations/:id - delete a conversation (protected)
+router.delete('/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  if (!id) return res.status(400).json({ message: 'ID manquant' });
+  try {
+    try {
+      // Try to delete from conversations table
+      const [result] = await pool.query('DELETE FROM conversations WHERE id = ?', [id]);
+      if (result && result.affectedRows && result.affectedRows > 0) {
+        return res.status(200).json({ message: 'Supprimé' });
+      }
+      // If no rows affected, return 404
+      return res.status(404).json({ message: 'Conversation non trouvée' });
+    } catch (e) {
+      // If conversations table doesn't exist, return 404 so frontend can handle
+      return res.status(404).json({ message: 'Not found' });
+    }
+  } catch (err) {
+    console.error('Error deleting conversation', err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 export default router; 

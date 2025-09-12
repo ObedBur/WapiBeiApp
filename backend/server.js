@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
 import authRoutes from './routes/auth.js';
 import sellersRoutes from './routes/sellers.js';
 import productsRoutes from './routes/products.js';
@@ -9,6 +10,7 @@ import conversationsRoutes from './routes/conversations.js';
 import usersRoutes from './routes/users.js';
 import testimonialsRoutes from './routes/testimonials.js';
 import notificationsRoutes from './routes/notifications.js';
+import { initWebSocketServer } from './ws.js';
 
 dotenv.config();
 
@@ -32,7 +34,13 @@ app.use('/api/notifications', notificationsRoutes);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// Create a plain HTTP server so we can attach WebSocket server to it
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+initWebSocketServer(server);
+
+server.listen(PORT, () => {
   console.log(`
 🚀 Serveur démarré avec succès !
 

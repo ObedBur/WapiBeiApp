@@ -633,6 +633,8 @@ export default function Marketplace() {
                             email: full?.email || s?.email || null,
                             nom: full?.nom || null,
                             prenom: full?.prenom || null,
+                            avatar: full?.avatar || s?.avatar || null,
+                            city: full?.city || s?.city || null,
                           };
                           try {
                             localStorage.setItem('messagerie_open_with', JSON.stringify(partner));

@@ -98,9 +98,6 @@ export default function Header() {
 
       {showMessagerie && (
         <div className="fixed inset-0 z-50 bg-white">
-          <div className="absolute top-4 right-4">
-            <button onClick={() => setShowMessagerie(false)} className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg bg-white border border-gray-200" aria-label="Fermer la messagerie">✖</button>
-          </div>
           <div className="h-full">
             <React.Suspense fallback={<div className="p-6">Chargement de la messagerie...</div>}>
               <Messagerie />

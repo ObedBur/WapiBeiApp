@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import authMiddleware from '../middleware/auth.js';
 import upload from '../config/multer.js';
+import { broadcastMessage, broadcastTyping } from '../ws.js';
 
 const router = express.Router();
 
@@ -39,10 +40,19 @@ router.post('/', authMiddleware, async (req, res) => {
       const [result] = await pool.query('INSERT INTO messages (conversationId, senderId, content, createdAt, replyTo, attachment_url, isDraft, scheduledAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [conversationId, senderId, content, createdAt || new Date().toISOString(), replyTo || null, attachment_url || null, isDraft ? 1 : 0, scheduledAt || null]);
       const insertedId = result.insertId;
       const [rows] = await pool.query('SELECT id, conversationId, senderId, content, createdAt, replyTo, attachment_url, isDraft, scheduledAt FROM messages WHERE id = ?', [insertedId]);
-      return res.status(201).json((rows && rows[0]) || { id: insertedId, conversationId, senderId, content, createdAt });
+      const created = (rows && rows[0]) || { id: insertedId, conversationId, senderId, content, createdAt };
+
+      // Broadcast the new message to websocket clients subscribed to this conversation
+      try { broadcastMessage(created); } catch (e) { console.error('Failed to broadcast message', e); }
+
+      return res.status(201).json(created);
     } catch (e) {
       // If messages table doesn't exist, echo back the submitted message with a fake id
-      return res.status(201).json({ id: Date.now(), conversationId, senderId, content, createdAt: createdAt || new Date().toISOString(), replyTo: replyTo || null, attachment_url: attachment_url || null, isDraft: isDraft ? 1 : 0, scheduledAt: scheduledAt || null });
+      const created = { id: Date.now(), conversationId, senderId, content, createdAt: createdAt || new Date().toISOString(), replyTo: replyTo || null, attachment_url: attachment_url || null, isDraft: isDraft ? 1 : 0, scheduledAt: scheduledAt || null };
+
+      try { broadcastMessage(created); } catch (err) { console.error('Failed to broadcast message (fallback)', err); }
+
+      return res.status(201).json(created);
     }
   } catch (err) {
     console.error('Error creating message', err);
@@ -121,6 +131,25 @@ router.post('/draft', authMiddleware, async (req, res) => {
     }
   } catch (err) {
     console.error('Error saving draft', err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/messages/typing - broadcast typing indicator
+router.post('/typing', authMiddleware, async (req, res) => {
+  const userId = req.user?.id;
+  const { conversationId, isTyping } = req.body || {};
+  if (!conversationId || (isTyping === undefined)) return res.status(400).json({ message: 'Données manquantes' });
+  try {
+    try {
+      broadcastTyping({ conversationId, userId, isTyping: !!isTyping });
+      return res.json({ ok: true });
+    } catch (e) {
+      // fallback
+      return res.json({ ok: true });
+    }
+  } catch (err) {
+    console.error('Error broadcasting typing', err);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Mail, Lock, Bell, Eye, Globe, LogOut } from '../../components/Icons';
 import { useNavigate } from 'react-router-dom';
+import authService from '../../services/auth.service';
 
 // Inline fallbacks for icons not present in Icons.jsx
 const Save = (props) => (
@@ -319,6 +320,12 @@ export default function Parametres() {
 
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    authService.logout();
+    // reload the page to reset app state immediately
+    window.location.reload();
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="bg-white shadow-md rounded-2xl overflow-hidden">
@@ -348,7 +355,7 @@ export default function Parametres() {
           })}
 
           <div className="mt-2 border-t pt-3">
-            <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition"><LogOut className="w-5 h-5" /> Se déconnecter</button>
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition"><LogOut className="w-5 h-5" /> Se déconnecter</button>
           </div>
         </div>
       </div>

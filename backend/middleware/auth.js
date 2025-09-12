@@ -22,6 +22,10 @@ export default async function authMiddleware(req, res, next) {
     return next();
   } catch (err) {
     console.error('Auth token error', err);
+    // Distinguish expired token for clearer client handling
+    if (err && err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expiré', expiredAt: err.expiredAt });
+    }
     return res.status(401).json({ message: 'Token invalide' });
   }
 } 
