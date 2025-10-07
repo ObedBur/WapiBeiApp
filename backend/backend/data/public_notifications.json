@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "Bienvenue sur WapiBei !",
+    "content": "Découvrez notre nouvelle plateforme de vente de produits agricoles locaux. Rejoignez notre communauté et profitez de produits frais directement des producteurs.",
+    "type": "nouveau_produit",
+    "action_url": "/marketplace",
+    "created_at": "2025-10-04T19:26:12.005Z",
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "title": "Nouveaux produits disponibles",
+    "content": "De nouveaux producteurs ont rejoint notre plateforme ! Découvrez leurs produits frais et de qualité dans notre marketplace.",
+    "type": "nouveau_produit",
+    "action_url": "/marketplace",
+    "created_at": "2025-10-03T19:26:12.005Z",
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "title": "Offre spéciale de lancement",
+    "content": "Profitez de 20% de réduction sur votre première commande avec le code BIENVENUE20. Offre valable jusqu'à la fin du mois.",
+    "type": "offre_speciale",
+    "action_url": "/marketplace",
+    "created_at": "2025-10-02T19:26:12.005Z",
+    "is_active": true
+  }
+]
