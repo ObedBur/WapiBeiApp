@@ -7,9 +7,18 @@ const router = express.Router();
 // GET /api/notifications - list notifications for current user (protected)
 router.get('/', authMiddleware, async (req, res) => {
   const userId = req.user?.id;
+  const limitParam = parseInt(req.query.limit, 10);
+  const useLimit = Number.isInteger(limitParam) && limitParam > 0;
   try {
     try {
-      const [rows] = await pool.query('SELECT id, title, body, is_read, data, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+      let rows;
+      if (useLimit) {
+        const [r] = await pool.query('SELECT id, title, body, is_read, data, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limitParam]);
+        rows = r;
+      } else {
+        const [r] = await pool.query('SELECT id, title, body, is_read, data, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+        rows = r;
+      }
       return res.json(rows || []);
     } catch (e) {
       // notifications table may not exist yet; return empty array for frontend

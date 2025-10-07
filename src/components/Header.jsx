@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/auth.service';
-import { User, ShoppingCart, Mail, X } from './Icons';
+import { User, ShoppingCart, Mail, X, Bell } from './Icons';
+import { fetchWithAuth } from '../utils/api';
 
 const Messagerie = React.lazy(() => import('../modules/messagerie/Messagerie'));
 
@@ -18,12 +19,35 @@ export default function Header() {
   const profileLink = userId ? `/vendeur/${userId}` : '/connexion';
 
   const [showMessagerie, setShowMessagerie] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifPreview, setNotifPreview] = useState([]);
 
   useEffect(() => {
     const onStorage = () => setUser(authService.getCurrentUser());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Load unread count and preview notifications for header
+  useEffect(() => {
+    let mounted = true;
+    async function loadHeaderNotifs() {
+      try {
+        const data = await fetchWithAuth('/api/notifications?limit=3');
+        if (!mounted) return;
+        if (Array.isArray(data)) {
+          setNotifPreview(data.slice(0, 3));
+          setUnreadCount(data.filter(n => !n.is_read).length);
+        }
+      } catch (e) {
+        // ignore header fetch errors
+        console.debug('Header notifications load failed', e);
+      }
+    }
+    loadHeaderNotifs();
+    return () => { mounted = false; };
+  }, [user]);
 
   useEffect(() => {
     const handler = () => {
@@ -55,8 +79,8 @@ export default function Header() {
   };
 
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex items-center h-16 justify-between">
           {/* Left: logo + mobile menu button */}
           <div className="flex items-center gap-3">
@@ -68,12 +92,12 @@ export default function Header() {
 
           {/* Center: navigation + search (desktop) */}
           <div className="flex-1 flex items-center justify-center">
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Accueil</Link>
-              <Link to="/marketplace" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Marketplace</Link>
+            <nav className="hidden md:flex items-center space-x-6 md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
+              <Link to="/" className="text-gray-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium rounded-md hover:bg-emerald-50 transition transform duration-150">Accueil</Link>
+              <Link to="/marketplace" className="text-gray-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium rounded-md hover:bg-emerald-50 transition transform duration-150">Marketplace</Link>
               {isAdmin && (
                 <div className="relative">
-                  <button onClick={() => setAdminMenuOpen((s) => !s)} className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium inline-flex items-center gap-2">
+                  <button onClick={() => setAdminMenuOpen((s) => !s)} className="text-gray-600 hover:text-emerald-700 px-3 py-2 text-sm font-medium inline-flex items-center gap-2 rounded-md hover:bg-emerald-50 transition duration-150">
                     Admin <span className="text-xs">▾</span>
                   </button>
                   {adminMenuOpen && (
@@ -90,7 +114,7 @@ export default function Header() {
 
             <div className="w-full px-4 md:px-0 max-w-2xl">
               <input
-                className="w-full md:w-full placeholder-gray-400 bg-gray-50 border border-gray-200 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full md:w-full lg:hidden placeholder-gray-400 bg-white/70 border border-gray-200 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm hover:shadow-md transition-shadow duration-200"
                 placeholder="Rechercher un produit, une catégorie ou un vendeur..."
                 aria-label="Rechercher"
               />
@@ -102,15 +126,38 @@ export default function Header() {
             {/* mobile: nothing here, search input is centered */}
 
             <div className="hidden md:flex items-center space-x-3">
-              <button className="relative p-2 rounded-md hover:bg-gray-100" aria-label="Notifications">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" /></svg>
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-red-100 bg-red-600 rounded-full">3</span>
-              </button>
+              <div className="relative">
+                <button onClick={() => setNotifOpen((s) => !s)} className="relative p-2 rounded-md hover:bg-emerald-50 transition-colors duration-150" aria-label="Notifications">
+                  <Bell className="h-5 w-5 text-gray-700 transform transition-transform duration-200 hover:scale-110" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-red-600 rounded-full">{unreadCount}</span>
+                  )}
+                </button>
 
-              <Link to={profileLink} className="p-2 rounded-md hover:bg-gray-100" aria-label="Profil"><User className="h-5 w-5 text-gray-700" /></Link>
-              <Link to="/marketplace#cart" className="p-2 rounded-md hover:bg-gray-100" aria-label="Panier"><ShoppingCart className="h-5 w-5 text-gray-700" /></Link>
-              <button onClick={() => setShowMessagerie(true)} className="p-2 rounded-md hover:bg-gray-100" aria-label="Messagerie"><Mail className="h-5 w-5 text-gray-700" /></button>
-              {!user && (<Link to="/login" className="ml-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors duration-200">Connexion</Link>)}
+                {notifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg p-3 z-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-semibold">Notifications récentes</div>
+                      <Link to="/notifications" onClick={() => setNotifOpen(false)} className="text-xs text-emerald-600 hover:underline">Voir tout</Link>
+                    </div>
+                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                      {notifPreview.length === 0 && <div className="text-sm text-gray-500">Aucune notification récente</div>}
+                      {notifPreview.map(n => (
+                        <Link key={n.id} to="/notifications" onClick={() => setNotifOpen(false)} className={`block p-2 rounded-md hover:bg-gray-50 ${n.is_read ? 'bg-white' : 'bg-emerald-50 border border-emerald-100'}`}>
+                          <div className="text-sm font-medium text-gray-900">{n.title}</div>
+                          <div className="text-xs text-gray-500 truncate">{n.body}</div>
+                          <div className="text-2xs text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Link to={profileLink} className="p-2 rounded-full hover:bg-emerald-50 transition-colors duration-150" aria-label="Profil"><User className="h-5 w-5 text-gray-700 transform transition-transform duration-200 hover:scale-110" /></Link>
+              <Link to="/marketplace#cart" className="p-2 rounded-full hover:bg-emerald-50 transition-colors duration-150" aria-label="Panier"><ShoppingCart className="h-5 w-5 text-gray-700 transform transition-transform duration-200 hover:scale-110" /></Link>
+              <button onClick={() => setShowMessagerie(true)} className="p-2 rounded-full hover:bg-emerald-50 transition-colors duration-150" aria-label="Messagerie"><Mail className="h-5 w-5 text-gray-700 transform transition-transform duration-200 hover:scale-110" /></button>
+              {!user && (<Link to="/login" className="ml-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors duration-200 shadow">Connexion</Link>)}
             </div>
 
             {/* Mobile: show minimal icons if not logged in */}
