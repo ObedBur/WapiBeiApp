@@ -17,3 +17,4 @@ After building the web app (`npm run build`), you can add Capacitor and build na
 5. Sync web assets after changes: `npx cap copy` then rebuild native.
 
 
+# WapiBeiApp
