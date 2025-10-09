@@ -18,3 +18,4 @@ After building the web app (`npm run build`), you can add Capacitor and build na
 
 
 # WapiBeiApp
+# WapiBeiApp
