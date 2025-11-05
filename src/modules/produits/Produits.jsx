@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart, Eye } from '../../components/Icons';
 import ProductModal, { PublishProductModal } from '../../components/ProductModal';
 import EmptyState from '../../components/EmptyState';
@@ -18,7 +19,9 @@ const Trash2 = (props) => (
 );
 
 export default function Produits({ products = [], openPublish = false, onAddProduct }) {
+  const navigate = useNavigate();
   const [showPublishModal, setShowPublishModal] = React.useState(!!openPublish);
+  const [viewProduct, setViewProduct] = React.useState(null);
   const [title, setTitle] = React.useState('');
   const [price, setPrice] = React.useState('');
   const [image, setImage] = React.useState('');
@@ -85,42 +88,73 @@ export default function Produits({ products = [], openPublish = false, onAddProd
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Publier vos produits */}
+      <div>
+        <button
+          onClick={() => {
+            try {
+              const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+              fetch(`${BASE}/api/vendor-click`, { method: 'POST' }).catch(() => {});
+            } catch (_) {}
+            try { navigate('/publier'); } catch (_) { window.location.href = '/publier'; }
+          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
+        >
+          Publier vos produits
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map((product) => (
-          <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-            <div className="aspect-square bg-gray-100 relative overflow-hidden">
+          <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+            <div className="aspect-[3/4] bg-gray-100 relative overflow-hidden">
               <img 
                 src={product.image} 
                 alt={product.name}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
               />
-              <div className="absolute top-3 right-3 flex gap-2">
-                <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                  <Heart className="w-4 h-4 text-gray-600" />
-                </button>
-                <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                  <Eye className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
             </div>
             
-            <div className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h4>
-              <p className="text-2xl font-bold text-blue-600 mb-3">{product.price}€</p>
+            <div className="p-3">
+              <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2 text-sm">{product.name}</h4>
+              <p className="text-xl font-bold text-blue-600 mb-3">{product.price}€</p>
               
               <div className="flex gap-2">
-                <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium">
-                  <Edit className="w-4 h-4" />
-                  Modifier
-                </button>
-                <button className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
-                  <Trash2 className="w-4 h-4" />
+                <button
+                  onClick={() => setViewProduct(product)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                >
+                  Afficher
                 </button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Bouton Publier placé sous la grille des produits */}
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={() => {
+            try {
+              const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+              fetch(`${BASE}/api/vendor-click`, { method: 'POST' }).catch(() => {});
+            } catch (_) {}
+            try { navigate('/publier'); } catch (_) { window.location.href = '/publier'; }
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
+        >
+          Publier vos produits
+        </button>
+      </div>
+
+      {viewProduct && (
+        <ProductModal
+          product={viewProduct}
+          onClose={() => setViewProduct(null)}
+          onAdd={(p) => { onAddProduct && onAddProduct(p); setViewProduct(null); }}
+        />
+      )}
       {showPublishModal && (
         <PublishProductModal
           isOpen={showPublishModal}

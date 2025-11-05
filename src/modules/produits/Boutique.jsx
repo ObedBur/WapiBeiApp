@@ -305,12 +305,24 @@ export default function Boutique({ boutique, owner = false, onCreate, onEdit, on
         </div>
 
         {owner && !isEditing && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap gap-3">
             <button 
               onClick={onManage}
               className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
             >
               Gérer mes produits
+            </button>
+            <button
+              onClick={() => {
+                try {
+                  const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+                  fetch(`${BASE}/api/vendor-click`, { method: 'POST' }).catch(() => {});
+                } catch (_) {}
+                try { navigate('/publier'); } catch (_) { window.location.href = '/publier'; }
+              }}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium"
+            >
+              Publier vos produits
             </button>
           </div>
         )}
