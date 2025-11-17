@@ -13,7 +13,6 @@ dist-ssr
 *.local
 
 # Ignore backend folder (local dev DB, uploads, envs)
-backend/
 
 # Editor directories and files
 .vscode/*
