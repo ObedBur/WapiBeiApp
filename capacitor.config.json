@@ -1,0 +1,12 @@
+{
+  "appId": "com.wapibei.app",
+  "appName": "WapiBei",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost:5173",
+    "cleartext": true
+  }
+}
+
+
